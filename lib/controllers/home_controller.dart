@@ -1,0 +1,137 @@
+import 'dart:developer';
+
+import 'package:get/get.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:flutter/material.dart';
+import 'package:ibadahku/constants/box_storage.dart';
+import 'package:ibadahku/utils/utils.dart';
+import 'package:intl/intl.dart';
+
+class HomeController extends GetxController {
+  final dio.Dio _dio = dio.Dio();
+
+  final RxList<dynamic> allCity = <dynamic>[].obs;
+  final TextEditingController searchController = TextEditingController();
+
+  final RxString currentCity = ''.obs;
+  final RxString currentCityId = ''.obs;
+  final RxString currentHijrDate = ''.obs;
+
+  final RxMap<String, dynamic> prayerTime = <String, dynamic>{}.obs;
+  final RxString currentPrayerTime = '--:--'.obs;
+  final RxString currentPrayerTimeName = '-'.obs;
+  final RxString timeAhead = '-'.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeLocationData();
+  }
+
+  void _initializeLocationData() {
+    final cityNameStorage = BoxStorage().get("name_current_city");
+    final cityIdStorage = BoxStorage().get("id_current_city");
+
+    if (cityNameStorage != null && cityNameStorage.isNotEmpty) {
+      currentCity.value = cityNameStorage;
+    }
+
+    if (cityIdStorage != null && cityIdStorage.isNotEmpty) {
+      currentCityId.value = cityIdStorage;
+    }
+  }
+
+  void changeCurrentLocation(String city, String cityId) {
+    BoxStorage().save("name_current_city", city);
+    BoxStorage().save("id_current_city", cityId);
+    currentCity.value = city;
+    currentCityId.value = cityId;
+    currentPrayerTime.value = "--:--";
+    currentPrayerTimeName.value = "-";
+    requestDataPrayerTime(cityId, DateTime.now());
+  }
+
+  Future<void> requestDataPrayerTime(String cityId, DateTime date) async {
+    try {
+      final response = await _dio.get(
+        "${Utils.baseUrl}/sholat/jadwal/$cityId/${date.year}/${date.month}/${date.day}/",
+      );
+
+      if (response.data != null && response.data['data'] != null) {
+        debugPrint("Prayer time response: ${response.data['data']}");
+        prayerTime.value = response.data["data"]['jadwal'];
+        _updateCurrentPrayerTime(date);
+      }
+    } catch (e) {
+      debugPrint("Error fetching prayer time: $e");
+    }
+  }
+
+  void _updateCurrentPrayerTime(DateTime date) {
+    prayerTime.forEach((key, value) {
+      if (key != "tanggal" && key != "date") {
+        final prayerDateTime = _parsePrayerDateTime(date, value);
+        if (prayerDateTime.isAfter(date) &&
+            currentPrayerTime.value == "--:--") {
+          _setCurrentPrayerTime(key, value, prayerDateTime);
+          return;
+        }
+      }
+    });
+
+    if (currentPrayerTime.value == "--:--") {
+      requestDataPrayerTime(
+        currentCityId.value,
+        date.add(const Duration(days: 1)),
+      );
+    }
+  }
+
+  DateTime _parsePrayerDateTime(DateTime date, String time) {
+    return DateFormat("yyyy-MM-dd HH:mm").parse(
+      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} $time:00",
+    );
+  }
+
+  void _setCurrentPrayerTime(String key, String value, DateTime prayerTime) {
+    currentPrayerTime.value = value;
+    currentPrayerTimeName.value = key;
+    final difference = prayerTime.difference(DateTime.now());
+    timeAhead.value =
+        "${difference.inHours} jam ${difference.inMinutes.abs() % 60} menit menjelang sholat ${key.capitalize}";
+  }
+
+  Future<void> requestDataHijrCalendar() async {
+    try {
+      final response = await _dio.get("${Utils.baseUrl}/cal/hijr");
+      if (response.data != null && response.data['data']['date'] != null) {
+        currentHijrDate.value = response.data["data"]["date"][1];
+      }
+    } catch (e) {
+      debugPrint("Error fetching Hijr calendar: $e");
+    }
+  }
+
+  Future<void> requestAllDataCity() async {
+    try {
+      final response = await _dio.get("${Utils.baseUrl}/sholat/kota/semua");
+      if (response.data != null) {
+        allCity.value = response.data["data"];
+      }
+    } catch (e) {
+      debugPrint("Error fetching all cities: $e");
+    }
+  }
+
+  Future<void> searchCity(String city) async {
+    try {
+      final response =
+          await _dio.get("${Utils.baseUrl}/sholat/kota/cari/$city");
+      if (response.data != null && response.data['data'] != null) {
+        allCity.value = response.data['data'];
+      }
+    } catch (e) {
+      log("Error searching city: $e");
+    }
+  }
+}
