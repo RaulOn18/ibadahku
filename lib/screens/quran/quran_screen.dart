@@ -32,7 +32,9 @@ class _QuranScreenState extends State<QuranScreen>
   @override
   Widget build(BuildContext context) {
     QuranController quranController = Get.put(QuranController());
-    if (quranController.allSurah.isEmpty) quranController.fetchAllSurah();
+    if (quranController.allSurah.isEmpty) {
+      quranController.fetchAllSurahFromJsonFile();
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -42,8 +44,9 @@ class _QuranScreenState extends State<QuranScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(IconsaxPlusLinear.arrow_left_1,
-              size: 28, color: Color(0xff13a795)),
+          icon: const Icon(
+            IconsaxPlusLinear.arrow_left_1,
+          ),
           onPressed: () => Get.back(),
         ),
         bottom: TabBar(
@@ -52,23 +55,22 @@ class _QuranScreenState extends State<QuranScreen>
             Tab(text: 'Surah'),
             Tab(text: 'Page'),
             Tab(text: 'Juz'),
-            // Tab(text: 'Hizb'),
-            // Tab(text: 'Ruku'),
           ],
         ),
       ),
+      backgroundColor: Colors.white,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Last Read section remains the same
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Text(
               "Last Read",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
-          const SizedBox(height: 8),
           SizedBox(
             height: 65,
             child: ListView.separated(
@@ -114,6 +116,7 @@ class _QuranScreenState extends State<QuranScreen>
           const SizedBox(height: 24),
           Expanded(
             child: TabBarView(
+              clipBehavior: Clip.hardEdge,
               controller: _tabController,
               children: [
                 _buildSurahTab(quranController),
@@ -137,58 +140,71 @@ class _QuranScreenState extends State<QuranScreen>
             child: CircularProgressIndicator(),
           );
         }
-        return ListView.builder(
-          itemBuilder: (context, index) {
-            var surah = quranController.allSurah[index];
-            return ListTile(
-              leading: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SvgPicture.asset(
-                    "assets/svg/shape_ayat.svg",
-                    fit: BoxFit.contain,
-                    height: 44,
+        return Container(
+          clipBehavior: Clip.hardEdge,
+          margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            border: Border.all(style: BorderStyle.solid, color: Colors.grey),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListView.builder(
+            itemBuilder: (context, index) {
+              var surah = quranController.allSurah[index];
+              return Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  leading: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        "assets/svg/shape_ayat.svg",
+                        fit: BoxFit.contain,
+                        height: 44,
+                      ),
+                      Text(
+                        "${surah['number']}",
+                        style: const TextStyle(fontSize: 12),
+                      )
+                    ],
                   ),
-                  Text(
-                    "${surah['number']}",
-                    style: const TextStyle(fontSize: 12),
-                  )
-                ],
-              ),
-              title: Text(
-                "${surah['name_id']}",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  title: Text(
+                    "${surah['name_id']}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  subtitle: Text(
+                    "${surah['number_of_verses']} Ayat | ${surah['revelation_id']}",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xff13a795),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: Text(
+                    "${surah['name_short']}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xff13a795),
+                    ),
+                  ),
+                  onTap: () {
+                    Get.toNamed(
+                      Routes.quranDetail,
+                      arguments: int.parse(
+                        surah['number'],
+                      ).obs,
+                    );
+                  },
+                  tileColor: index % 2 == 0 ? Colors.white : Colors.grey[200],
                 ),
-              ),
-              subtitle: Text(
-                "${surah['number_of_verses']} Ayat | ${surah['revelation_id']}",
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xff13a795),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              trailing: Text(
-                "${surah['name_short']}",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Color(0xff13a795),
-                ),
-              ),
-              onTap: () {
-                Get.toNamed(Routes.quranDetail, arguments: {
-                  'numberSurah': surah['number'],
-                  'title': surah['name_id'],
-                  'from': 1,
-                  'to': surah['number_of_verses'],
-                });
-              },
-            );
-          },
-          itemCount: quranController.allSurah.length,
+              );
+            },
+            itemCount: quranController.allSurah.length,
+          ),
         );
       },
     );
@@ -264,13 +280,13 @@ class _QuranScreenState extends State<QuranScreen>
     );
   }
 
-  Widget _buildHizbTab() {
-    // Implement Hizb tab content
-    return Center(child: Text('Hizb Content'));
-  }
+  // Widget _buildHizbTab() {
+  //   // Implement Hizb tab content
+  //   return const Center(child: Text('Hizb Content'));
+  // }
 
-  Widget _buildRukuTab() {
-    // Implement Ruku tab content
-    return Center(child: Text('Ruku Content'));
-  }
+  // Widget _buildRukuTab() {
+  //   // Implement Ruku tab content
+  //   return const Center(child: Text('Ruku Content'));
+  // }
 }

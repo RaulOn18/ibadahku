@@ -1,13 +1,13 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:ibadahku/constants/routes.dart';
 import 'package:ibadahku/controllers/home_controller.dart';
 import 'package:ibadahku/utils/utils.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final SupabaseClient client = Supabase.instance.client;
   final DateTime _currentDate = DateTime.now();
   final DraggableScrollableController _draggableScrollableController =
       DraggableScrollableController();
@@ -49,8 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // Check when the second changes to 0 (minute change)
         if (_homeController.currentCityId.value != "" &&
             _homeController.currentCity.value != "") {
-          debugPrint(
-              "Minute changed, requesting prayer time at ${DateTime.now()}");
+          log("Minute changed, requesting prayer time at ${DateTime.now()}");
 
           _homeController.currentPrayerTime.value = "--:--";
           _homeController.currentPrayerTimeName.value = "-";
@@ -65,15 +65,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(),
-      backgroundColor: const Color(0xff159687),
-      body: Stack(
-        children: [
-          _buildHeader(),
-          _buildDraggableScrollableSheet(),
-        ],
-      ),
+    return Obx(
+      () => _homeController.isLoading.value
+          ? const Center(child: CircularProgressIndicator())
+          : Scaffold(
+              appBar: _buildAppBar(),
+              backgroundColor: Utils.kSecondaryColor,
+              body: Stack(
+                children: [
+                  _buildHeader(),
+                  _buildDraggableScrollableSheet(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -170,7 +174,20 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Utils.kPrimaryColor,
         ),
         tooltip: 'Profile',
-        onPressed: () => Get.toNamed(Routes.profile),
+        onPressed: () {
+          if (client.auth.currentUser != null) {
+            Get.toNamed(Routes.profile);
+          } else {
+            ScaffoldMessenger.of(context)
+              ..clearSnackBars()
+              ..showSnackBar(const SnackBar(
+                content: Text("Please login first"),
+                behavior: SnackBarBehavior.floating,
+                showCloseIcon: true,
+              ));
+            Get.toNamed(Routes.login);
+          }
+        },
       ),
     );
   }
@@ -178,7 +195,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     return Container(
       alignment: Alignment.center,
-      height: 242,
+      padding: EdgeInsets.zero,
+      width: double.infinity,
+      height: Get.height > 800 ? 264 : 242,
       decoration: const BoxDecoration(
         color: Utils.kPrimaryColor,
         image: DecorationImage(
@@ -245,10 +264,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDraggableScrollableSheet() {
     return DraggableScrollableSheet(
       controller: _draggableScrollableController,
-      minChildSize: 0.62,
-      initialChildSize: 0.62,
-      maxChildSize: 0.98,
-      snapSizes: const [0.62, 0.98],
+      minChildSize: 0.64,
+      initialChildSize: 0.64,
+      maxChildSize: 0.99,
+      snapSizes: const [0.64, 0.99],
       snapAnimationDuration: const Duration(milliseconds: 200),
       snap: true,
       expand: true,
@@ -301,24 +320,63 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildFeatureButton("Quran", IconsaxPlusBold.book_1,
                   () => Get.toNamed(Routes.quran)),
-              _buildFeatureButton("Adzan", IconsaxPlusBold.volume_high,
-                  () => Get.toNamed(Routes.adzan)),
-              _buildFeatureButton("Yaumiyah", IconsaxPlusBold.note,
-                  () => Get.toNamed(Routes.yaumiyah)),
-              _buildFeatureButton("Dzikr", IconsaxPlusBold.archive_book,
-                  () => Get.toNamed(Routes.dizkr)),
-              _buildFeatureButton("More", IconsaxPlusBold.menu, () {
-                ScaffoldMessenger.of(context).clearSnackBars();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Coming Soon"),
-                    behavior: SnackBarBehavior.floating,
-                    showCloseIcon: true,
+              _buildFeatureButton(
+                  "Adzan",
+                  IconsaxPlusBold.volume_high,
+                  () => ScaffoldMessenger.of(context)
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                      const SnackBar(
+                        content: Text("Coming Soon"),
+                        behavior: SnackBarBehavior.floating,
+                        showCloseIcon: true,
+                      ),
+                    ) //Get.toNamed(Routes.adzan)
                   ),
-                );
+              _buildFeatureButton("Yaumiyah", IconsaxPlusBold.note, () {
+                if (client.auth.currentUser != null) {
+                  Get.toNamed(Routes.yaumiyah);
+                } else {
+                  ScaffoldMessenger.of(context)
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                      const SnackBar(
+                        content: Text("Please login first"),
+                        behavior: SnackBarBehavior.floating,
+                        showCloseIcon: true,
+                      ),
+                    );
+                  Get.toNamed(Routes.login);
+                }
+              }),
+              _buildFeatureButton(
+                "Dzikr",
+                IconsaxPlusBold.archive_book,
+                () => ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                    const SnackBar(
+                      content: Text("Coming Soon"),
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                    ),
+                  ) //Get.toNamed(Routes.dizkr)
+                ,
+              ),
+              _buildFeatureButton("More", IconsaxPlusBold.menu, () {
+                ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                    const SnackBar(
+                      content: Text("Coming Soon"),
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                    ),
+                  );
               }),
             ],
           ),
@@ -328,32 +386,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFeatureButton(String title, IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+    return SizedBox(
+      width: Get.width / 5 - 14,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            Ink(
-              height: 56,
-              width: 56,
-              decoration: BoxDecoration(
-                color: Utils.kPrimaryColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: Colors.white,
+            InkWell(
+              onTap: () => onTap(),
+              child: Ink(
+                height: 56,
+                width: 56,
+                decoration: BoxDecoration(
+                  color: Utils.kPrimaryColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: Colors.white,
+                ),
               ),
             ),
             Text(
               title,
               style: const TextStyle(
                 color: Colors.black,
-                fontSize: 14,
+                fontSize: 13,
+                overflow: TextOverflow.ellipsis,
                 fontWeight: FontWeight.bold,
               ),
             ),

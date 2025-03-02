@@ -6,7 +6,8 @@ import 'package:ibadahku/screens/forgot_password_screen.dart';
 import 'package:ibadahku/screens/home_screen.dart';
 import 'package:ibadahku/screens/login_screen.dart';
 import 'package:ibadahku/screens/profile_screen.dart';
-import 'package:ibadahku/screens/quran_screen.dart';
+import 'package:ibadahku/screens/quran/quran_detail_screen.dart';
+import 'package:ibadahku/screens/quran/quran_screen.dart';
 import 'package:ibadahku/screens/splash_screen.dart';
 import 'package:ibadahku/screens/yaumiyah_screen.dart';
 
@@ -45,7 +46,6 @@ class Pages {
     GetPage(
       name: splash,
       page: () => const SplashScreen(),
-      transition: Transition.fadeIn,
       transitionDuration: const Duration(seconds: 1),
     ),
     GetPage(
@@ -100,21 +100,21 @@ class Pages {
     GetPage(
       name: yaumiyah,
       page: () => const YaumiyahScreen(),
-      transition: Transition.topLevel,
+      transition: Transition.downToUp,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: quran,
       page: () => const QuranScreen(),
-      transition: Transition.topLevel,
+      transition: Transition.downToUp,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: quranDetail,
-      page: () => const QuranScreen(),
-      transition: Transition.topLevel,
+      page: () => const QuranDetailScreen(),
+      transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),

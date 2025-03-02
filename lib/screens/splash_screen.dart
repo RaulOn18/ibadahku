@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:ibadahku/constants/routes.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,10 +12,10 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
-    Timer(
-      const Duration(seconds: 3),
-      () => Navigator.pushReplacementNamed(context, Routes.home),
-    );
+    // Timer(
+    //   const Duration(seconds: 3),
+    //   () => Navigator.pushReplacementNamed(context, Routes.home),
+    // );
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -43,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text("Ibadahku", style: Get.textTheme.titleLarge),
+                  const SizedBox(height: 4),
                   Text("Developed by STAI Daarut Tauhiid Bandung",
                       style: Get.textTheme.bodySmall),
                 ],

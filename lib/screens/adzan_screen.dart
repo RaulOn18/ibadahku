@@ -25,6 +25,7 @@ class _AdzanScreenState extends State<AdzanScreen> {
           onPressed: () => Get.back(),
         ),
       ),
+      body: const Center(child: Text("Adzan"),),
     );
   }
 }

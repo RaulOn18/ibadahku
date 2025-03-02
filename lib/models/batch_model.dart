@@ -1,11 +1,11 @@
-class AngkatanModel {
+class BatchModel {
   String id;
   String name;
 
-  AngkatanModel({required this.id, required this.name});
+  BatchModel({required this.id, required this.name});
 
-  factory AngkatanModel.fromJson(Map<String, dynamic> json) {
-    return AngkatanModel(
+  factory BatchModel.fromJson(Map<String, dynamic> json) {
+    return BatchModel(
       id: json['id'],
       name: json['name'],
     );

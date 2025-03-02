@@ -4,17 +4,19 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:ibadahku/constants/box_storage.dart';
-import 'package:ibadahku/utils/utils.dart';
+import 'package:ibadahku/core/provider/api/api_constants.dart';
 import 'package:intl/intl.dart';
 
 class HomeController extends GetxController {
   final dio.Dio _dio = dio.Dio();
 
+  RxBool isLoading = true.obs;
+
   final RxList<dynamic> allCity = <dynamic>[].obs;
   final TextEditingController searchController = TextEditingController();
 
-  final RxString currentCity = ''.obs;
-  final RxString currentCityId = ''.obs;
+  final RxString currentCity = 'Kota. Bandung'.obs;
+  final RxString currentCityId = '1219'.obs;
   final RxString currentHijrDate = ''.obs;
 
   final RxMap<String, dynamic> prayerTime = <String, dynamic>{}.obs;
@@ -26,6 +28,7 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     _initializeLocationData();
+    Future.delayed(const Duration(milliseconds: 300), () => isLoading.value = false);
   }
 
   void _initializeLocationData() {
@@ -54,13 +57,15 @@ class HomeController extends GetxController {
   Future<void> requestDataPrayerTime(String cityId, DateTime date) async {
     try {
       final response = await _dio.get(
-        "${Utils.baseUrl}/sholat/jadwal/$cityId/${date.year}/${date.month}/${date.day}/",
+        "${ApiConstants.baseUrl}sholat/jadwal/$cityId/${date.year}/${date.month}/${date.day}/",
       );
 
       if (response.data != null && response.data['data'] != null) {
-        debugPrint("Prayer time response: ${response.data['data']}");
+        log("Prayer time response: ${response.data['data']}");
         prayerTime.value = response.data["data"]['jadwal'];
-        _updateCurrentPrayerTime(date);
+        if (prayerTime.isNotEmpty) {
+          _updateCurrentPrayerTime(date);
+        }
       }
     } catch (e) {
       debugPrint("Error fetching prayer time: $e");
@@ -79,12 +84,12 @@ class HomeController extends GetxController {
       }
     });
 
-    if (currentPrayerTime.value == "--:--") {
-      requestDataPrayerTime(
-        currentCityId.value,
-        date.add(const Duration(days: 1)),
-      );
-    }
+    // if (currentPrayerTime.value == "--:--") {
+    //   requestDataPrayerTime(
+    //     currentCityId.value,
+    //     date.add(const Duration(days: 1)),
+    //   );
+    // }
   }
 
   DateTime _parsePrayerDateTime(DateTime date, String time) {
@@ -103,7 +108,7 @@ class HomeController extends GetxController {
 
   Future<void> requestDataHijrCalendar() async {
     try {
-      final response = await _dio.get("${Utils.baseUrl}/cal/hijr");
+      final response = await _dio.get("${ApiConstants.baseUrl}cal/hijr");
       if (response.data != null && response.data['data']['date'] != null) {
         currentHijrDate.value = response.data["data"]["date"][1];
       }
@@ -114,7 +119,7 @@ class HomeController extends GetxController {
 
   Future<void> requestAllDataCity() async {
     try {
-      final response = await _dio.get("${Utils.baseUrl}/sholat/kota/semua");
+      final response = await _dio.get("${ApiConstants.baseUrl}sholat/kota/semua");
       if (response.data != null) {
         allCity.value = response.data["data"];
       }
@@ -126,7 +131,7 @@ class HomeController extends GetxController {
   Future<void> searchCity(String city) async {
     try {
       final response =
-          await _dio.get("${Utils.baseUrl}/sholat/kota/cari/$city");
+          await _dio.get("${ApiConstants.baseUrl}sholat/kota/cari/$city");
       if (response.data != null && response.data['data'] != null) {
         allCity.value = response.data['data'];
       }

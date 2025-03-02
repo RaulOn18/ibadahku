@@ -1,11 +1,23 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ibadahku/constants/box_storage.dart';
 import 'package:ibadahku/constants/routes.dart';
+import 'package:ibadahku/utils/utils.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   BoxStorage().init();
+  try {
+    await Supabase.initialize(
+        url: "https://bpclthqlkjnmyokrhzsh.supabase.co",
+        anonKey:
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwY2x0aHFsa2pubXlva3JoenNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQyODc0ODUsImV4cCI6MjAzOTg2MzQ4NX0.2n1zWv85IIdhqjeHyBvU1lp1ZoDopePRFuh4KVf1pAY");
+  } catch (e, stackTrace) {
+    log("Error initializing supabase: $e, $stackTrace");
+  }
   runApp(const MyApp());
 }
 
@@ -17,10 +29,13 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Ibadahku',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Utils.kPrimaryMaterialColor,
+        colorScheme: ColorScheme.fromSeed(seedColor: Utils.kPrimaryColor),
+        scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
+        fontFamily: 'PlusJakartaSans',
       ),
-      initialRoute: Routes.splash,
+      initialRoute: Routes.home,
       getPages: Pages.all,
     );
   }

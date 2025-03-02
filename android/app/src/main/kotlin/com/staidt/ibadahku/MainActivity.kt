@@ -1,4 +1,4 @@
-package com.example.ibadahku
+package com.staidt.ibadahku
 
 import io.flutter.embedding.android.FlutterActivity
 
