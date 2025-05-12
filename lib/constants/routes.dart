@@ -8,6 +8,7 @@ import 'package:ibadahku/screens/login_screen.dart';
 import 'package:ibadahku/screens/profile_screen.dart';
 import 'package:ibadahku/screens/quran/quran_detail_screen.dart';
 import 'package:ibadahku/screens/quran/quran_screen.dart';
+import 'package:ibadahku/screens/sign_screen.dart';
 import 'package:ibadahku/screens/splash_screen.dart';
 import 'package:ibadahku/screens/yaumiyah_screen.dart';
 
@@ -55,13 +56,13 @@ class Pages {
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
-    // GetPage(
-    //   name: sign,
-    //   page: () => const SignView(),
-    //   transition: Transition.downToUp,
-    //   transitionDuration: const Duration(milliseconds: 500),
-    //   curve: Curves.fastLinearToSlowEaseIn,
-    // ),
+    GetPage(
+      name: sign,
+      page: () => const SignScreen(),
+      transition: Transition.downToUp,
+      transitionDuration: const Duration(milliseconds: 500),
+      curve: Curves.fastLinearToSlowEaseIn,
+    ),
     GetPage(
       name: forgotPassword,
       page: () => const ForgotPasswordScreen(),

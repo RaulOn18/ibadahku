@@ -9,18 +9,32 @@ class UserController extends GetxController {
   final SupabaseClient _client = Supabase.instance.client;
   Rx<UserModel?> userModel = Rx<UserModel?>(null);
 
+  RxBool isFetchingUser = false.obs;
+
   get user => userModel.value;
   get id => _client.auth.currentUser!.id;
 
-  void getUser() {
+  Future<void> fetchUser() async {
     if (id != null) {
-      log("Fetching user: $id");
-      _client.from('users').select().eq('id', id).single().then((value) {
-        log("User response: $value");
-        userModel.value = UserModel.fromJson(value);
-        log("User: ${userModel.value!.name}");
-        update();
-      });
+      try {
+        log("Fetching user: $id");
+        isFetchingUser.value = true;
+        await _client
+            .from('users')
+            .select()
+            .eq('id', id)
+            .single()
+            .then((value) {
+          log("User response: $value");
+          userModel.value = UserModel.fromJson(value);
+          log("User: ${userModel.value!.name}");
+          update();
+        });
+      } catch (e, stackTrace) {
+        log("Error: when fetch user $e $stackTrace");
+      } finally {
+        isFetchingUser.value = false;
+      }
     }
   }
 

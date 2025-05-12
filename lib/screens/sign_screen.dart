@@ -1,27 +1,30 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:ibadahku/components/custom_checkbox.dart';
+import 'package:ibadahku/components/custom_drop_down_with_label.dart';
+import 'package:ibadahku/constants/routes.dart';
 import 'package:ibadahku/controllers/login_controller.dart';
-import 'package:ibadahku/screens/forgot_password_screen.dart';
 import 'package:ibadahku/utils/utils.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignScreen extends StatefulWidget {
+  const SignScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignScreen> createState() => _SignScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignScreenState extends State<SignScreen> {
   final SupabaseClient client = Supabase.instance.client;
   var formKey = GlobalKey<FormState>();
 
   var loginController = Get.put(LoginController());
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,20 +63,20 @@ class _LoginScreenState extends State<LoginScreen> {
           //   ),
           // ),
           const Text(
-            "Welcome",
+            "Assalmualaikum!",
             style: TextStyle(
                 color: Utils.kPrimaryColor,
-                fontSize: 42,
+                fontSize: 32,
                 fontWeight: FontWeight.w900),
           ),
           const Text(
-            "back!",
+            "Welcome to Ibadahku",
             style: TextStyle(
-                color: Colors.black, fontSize: 40, fontWeight: FontWeight.w900),
+                color: Colors.black, fontSize: 28, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 20),
           const Text(
-            "Sign in to access your feed and stay connected with your community through real-time updates.",
+            "Tolong perhatikan semua inputan anda!. Semua inputan diatas harus diisi. pastikan semua inputan sudah benar.",
             style: TextStyle(color: Colors.black, fontSize: 14),
           ),
           const SizedBox(height: 30),
@@ -82,7 +85,32 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 TextFormField(
-                  controller: loginController.emailController,
+                  controller: loginController.nameController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(
+                      IconsaxPlusLinear.user,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                    hintText: "Masukan nama lengkap",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(22.0),
+                      borderSide: const BorderSide(
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: loginController.emailSignUpController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(
@@ -108,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 Obx(
                   () => TextFormField(
-                    controller: loginController.passwordController,
+                    controller: loginController.passwordSignUpController,
                     obscureText: loginController.isHidePassword.value,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(
@@ -132,8 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 20,
                         ),
                         onPressed: () {
-                          loginController.isHidePassword.value =
-                              !loginController.isHidePassword.value;
+                          loginController.isHidePassword.toggle();
                         },
                       ),
                     ),
@@ -145,47 +172,56 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 22),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const SizedBox(width: 8),
-                        Obx(
-                          () => CustomCheckbox(
-                            checkColor: Utils.kPrimaryColor,
-                            height: 24,
-                            width: 24,
-                            isChecked: loginController.isRemember.value,
-                            color: Colors.grey.shade500,
-                            iconSize: 20,
-                            onChanged: (val) {
-                              loginController.isRemember.value = val!;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ),
-                    InkWell(
-                      onTap: () {
-                        // redirect to website url https://ibadahku-web.vercel.app/users
-                        try {
-                          launchUrl(Uri.parse(
-                              "https://ibadahku-web.vercel.app/users"));
-                        } catch (e, stackTrace) {
-                          debugPrint("Error: $e $stackTrace");
-                        }
-                      },
-                      child: const Text(
-                        "Lupa Akun?",
-                        style: TextStyle(color: Colors.blue, fontSize: 14),
-                      ),
-                    )
-                  ],
+                const SizedBox(height: 18),
+                CustomDropDownWithLabel(
+                  label: "Angkatan",
+                  isShowLabel: false,
+                  selectedValue: "",
+                  items: const [],
+                  onChanged: (v) {},
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 22),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     Row(
+                //       children: [
+                //         const SizedBox(width: 8),
+                //         Obx(
+                //           () => CustomCheckbox(
+                //             checkColor: Utils.kPrimaryColor,
+                //             height: 24,
+                //             width: 24,
+                //             isChecked: loginController.isRemember.value,
+                //             color: Colors.grey.shade500,
+                //             iconSize: 20,
+                //             onChanged: (val) {
+                //               loginController.isRemember.value = val!;
+                //             },
+                //           ),
+                //         ),
+                //         const SizedBox(width: 8),
+                //       ],
+                //     ),
+                //     InkWell(
+                //       onTap: () {
+                //         ScaffoldMessenger.of(context)
+                //           ..clearSnackBars()
+                //           ..showSnackBar(
+                //             const SnackBar(
+                //               content: Text("Coming Soon"),
+                //               behavior: SnackBarBehavior.floating,
+                //               showCloseIcon: true,
+                //             ),
+                //           );
+                //       },
+                //       child: const Text(
+                //         "Forgot Password",
+                //         style: TextStyle(color: Colors.blue, fontSize: 14),
+                //       ),
+                //     )
+                //   ],
+                // ),
                 Obx(
                   () => ElevatedButton(
                     style: ButtonStyle(
@@ -202,12 +238,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Size(double.infinity, 50)), // Custom height
                     ),
                     onPressed: () {
-                      if (loginController.isLoading.value) return;
+                      if (loginController.isSignUp.value) return;
                       if (formKey.currentState!.validate()) {
-                        loginController.login();
+                        loginController.regsiter();
                       }
                     },
-                    child: loginController.isLoading.value
+                    child: loginController.isSignUp.value
                         ? const SizedBox(
                             height: 20,
                             width: 20,
@@ -217,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           )
                         : const Text(
-                            "Sign in",
+                            "Sign Up",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -225,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                // const SizedBox(height: 12),
                 // Obx(
                 //   () => ElevatedButton(
                 //     style: ButtonStyle(
@@ -309,26 +345,26 @@ class _LoginScreenState extends State<LoginScreen> {
           //         ),
           //       ],
           //     )),
-          // const SizedBox(height: 28),
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.center,
-          //   children: [
-          //     const Text(
-          //       "Don't have an account?",
-          //       style: TextStyle(color: Colors.black, fontSize: 14),
-          //     ),
-          //     const SizedBox(width: 8),
-          //     InkWell(
-          //       onTap: () {
-          //         Get.toNamed(Routes.sign);
-          //       },
-          //       child: const Text(
-          //         "Create an account",
-          //         style: TextStyle(color: Colors.blue, fontSize: 14),
-          //       ),
-          //     ),
-          //   ],
-          // ),
+          const SizedBox(height: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "Already have an account?",
+                style: TextStyle(color: Colors.black, fontSize: 14),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  Get.offAllNamed(Routes.login);
+                },
+                child: const Text(
+                  "Login",
+                  style: TextStyle(color: Colors.blue, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -49,40 +49,35 @@ class _YaumiyahScreenState extends State<YaumiyahScreen> {
       List<Map<String, dynamic>> ibadahList = category['list_ibadah'];
 
       for (var ibadah in ibadahList) {
-        // Periksa apakah ini hari Jumat
-        bool isFriday =
-            DateFormat.EEEE().format(controller.selectedDate.value) == 'Friday';
-
-        // Jangan hitung "Membaca Surat Al-Kahfi" kecuali di hari Jumat
-        if (ibadah['title'] == 'Membaca Surat Al-Kahfi' && !isFriday) {
+        // Skip if not visible for current day
+        if (!_shouldShowIbadah(ibadah, controller)) {
           continue;
         }
-        // Hitung task lainnya
+
         totalTasks++;
-        if (ibadah['value'].value == true) {
-          completedTasks++;
+
+        if (ibadah['input_type'] == 'checkbox') {
+          if (ibadah['value'].value == "1") {
+            completedTasks++;
+          }
+        } else {
+          // For dropdown, consider it completed if value is not '0'
+          if (ibadah['value'].value != "0") {
+            completedTasks++;
+          }
         }
       }
     }
 
-    // Kalkulasi persentase ibadah yang sudah diselesaikan
     double percentage = 0;
-
     if (totalTasks > 0) {
-      // Hitung persentase dengan akurasi tinggi
       percentage = (completedTasks / totalTasks) * 100;
-
-      // Pastikan persentase dibulatkan hingga 2 angka desimal untuk akurasi
       percentage = percentage.toPrecision(2);
-
-      // Jika semua task sudah selesai, pastikan persentasenya 100%
       if (completedTasks == totalTasks) {
         percentage = 100;
       }
     }
 
-    // Simpan persentase ini untuk dipakai di radial gauge
-    log("Percentage: $percentage, completedTasks: $completedTasks, totalTasks: $totalTasks");
     controller.overallPercentage.value = percentage;
   }
 
@@ -177,19 +172,43 @@ class _YaumiyahScreenState extends State<YaumiyahScreen> {
     );
   }
 
+  void _showDatePicker() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: controller.selectedDate.value,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+
+    if (pickedDate != null) {
+      controller.selectedDate.value = pickedDate;
+      _easyInfiniteDateTimelineController.animateToDate(pickedDate);
+      controller
+          .fetchDailyRecord(DateFormat('y-MM-dd').format(pickedDate))
+          .then((v) {
+        calculatePercentages();
+      });
+    }
+  }
+
   Widget _buildDateHeader(YaumiyahController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Obx(() => Text(
-                DateFormat.yMMMMEEEEd('id')
-                    .format(controller.selectedDate.value),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+          Obx(() => InkWell(
+                onTap: () {
+                  _showDatePicker();
+                },
+                child: Text(
+                  DateFormat.yMMMMEEEEd('id')
+                      .format(controller.selectedDate.value),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               )),
           IconButton(
@@ -214,13 +233,15 @@ class _YaumiyahScreenState extends State<YaumiyahScreen> {
   Widget _buildDateTimeline(YaumiyahController controller) {
     return Obx(
       () => EasyInfiniteDateTimeLine(
-        firstDate: DateTime.now().subtract(const Duration(days: 30)),
+        firstDate: DateTime(controller.selectedDate.value.year,
+            controller.selectedDate.value.month, 1),
+        lastDate: DateTime(controller.selectedDate.value.year,
+            controller.selectedDate.value.month + 1, 0),
         focusDate: controller.selectedDate.value,
         locale: "id",
         showTimelineHeader: false,
         dayProps: _getDateTimelineDayProps(),
         controller: _easyInfiniteDateTimelineController,
-        lastDate: DateTime.now().add(const Duration(days: 30)),
         onDateChange: (value) async {
           controller.selectedDate.value = value;
           await controller
@@ -333,39 +354,108 @@ class _YaumiyahScreenState extends State<YaumiyahScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
       itemBuilder: (context, index) {
         final ibadah = ibadahList[index];
-        if (ibadah['title'] == 'Membaca Surat Al-Kahfi' &&
-            DateFormat.EEEE().format(controller.selectedDate.value) !=
-                'Friday') {
+
+        // Skip certain items based on day
+        if (!_shouldShowIbadah(ibadah, controller)) {
           return Container();
         }
+
         return Material(
           type: MaterialType.transparency,
-          child: Obx(
-            () => CheckboxListTile(
-              title: Text(ibadah['title']),
-              tileColor: backgroundColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              onChanged: (value) {
-                ibadah['value'].value = value;
-                _showIbadahSnackBar(ibadah['title']);
-                calculatePercentages();
-                controller.insertDailyRecord(
-                    amalanTypeId, ibadah['id'], ibadah['value'].value);
-              },
-              controlAffinity: ListTileControlAffinity.platform,
-              value: ibadah['value'].value,
-              // onTap: () {
-              //   _showIbadahSnackBar(ibadah['title']);
-              // },
-              // trailing: const Icon(Icons.check, color: Utils.kPrimaryColor),
-              // leading: Icon(ibadah['icon']),
-            ),
-          ),
+          child: ibadah['input_type'] == 'checkbox'
+              ? _buildCheckboxTile(
+                  ibadah, amalanTypeId, backgroundColor, controller)
+              : _buildDropdownTile(
+                  ibadah, amalanTypeId, backgroundColor, controller),
         );
       },
       separatorBuilder: (context, index) => const SizedBox(height: 14),
+    );
+  }
+
+  bool _shouldShowIbadah(
+      Map<String, dynamic> ibadah, YaumiyahController controller) {
+    final currentDay = DateFormat.EEEE().format(controller.selectedDate.value);
+
+    if (ibadah['title'] == 'Membaca Surat Al-Kahfi' && currentDay != 'Friday') {
+      return false;
+    }
+    if (ibadah['title'] == 'Menyimak kajian Marifatullah' &&
+        currentDay != 'Thursday') {
+      return false;
+    }
+    if (ibadah['title'] == 'Menyimak kajian Al-Hikam' &&
+        currentDay != 'Thursday') {
+      return false;
+    }
+
+    return true;
+  }
+
+  Widget _buildCheckboxTile(
+    Map<String, dynamic> ibadah,
+    String amalanTypeId,
+    Color? backgroundColor,
+    YaumiyahController controller,
+  ) {
+    return Obx(
+      () => CheckboxListTile(
+        title: Text(ibadah['title']),
+        subtitle: ibadah['target_value'] != null
+            ? Text('Target: ${ibadah['target_value']}x')
+            : null,
+        tileColor: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        onChanged: (bool? value) {
+          final newValue = value == true ? "1" : "0";
+          ibadah['value'].value = newValue;
+          _showIbadahSnackBar(ibadah['title']);
+          calculatePercentages();
+          controller.insertDailyRecord(amalanTypeId, ibadah['id'], newValue);
+        },
+        controlAffinity: ListTileControlAffinity.platform,
+        value: ibadah['value'].value ==
+            "1", // Convert string to boolean for checkbox
+      ),
+    );
+  }
+
+  Widget _buildDropdownTile(
+    Map<String, dynamic> ibadah,
+    String amalanTypeId,
+    Color? backgroundColor,
+    YaumiyahController controller,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: ListTile(
+        title: Text(ibadah['title']),
+        trailing: Obx(
+          () => DropdownButton<String>(
+            value: ibadah['value'].value,
+            items: (ibadah['options'] as List<String>).map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                ibadah['value'].value = newValue;
+                _showIbadahSnackBar(ibadah['title']);
+                calculatePercentages();
+                controller.insertDailyRecord(
+                    amalanTypeId, ibadah['id'], newValue);
+              }
+            },
+          ),
+        ),
+      ),
     );
   }
 
