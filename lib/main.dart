@@ -1,15 +1,35 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:ibadahku/constants/box_storage.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:ibadahku/constants/routes.dart';
 import 'package:ibadahku/utils/utils.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  BoxStorage().init();
+
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  AndroidInitializationSettings initializationSettingsAndroid =
+      const AndroidInitializationSettings('@mipmap/ic_launcher');
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestNotificationsPermission();
+
+  await GetStorage.init();
+  initializeDateFormatting('id_ID', null);
+
   try {
     await Supabase.initialize(
         url: "https://bpclthqlkjnmyokrhzsh.supabase.co",
@@ -26,17 +46,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Ibadahku',
-      theme: ThemeData(
-        primarySwatch: Utils.kPrimaryMaterialColor,
-        colorScheme: ColorScheme.fromSeed(seedColor: Utils.kPrimaryColor),
-        scaffoldBackgroundColor: Colors.white,
-        useMaterial3: true,
-        fontFamily: 'PlusJakartaSans',
+    return ShowCaseWidget(
+      builder: (context) => GetMaterialApp(
+        title: 'Ibadahku',
+        theme: ThemeData(
+          primarySwatch: Utils.kPrimaryMaterialColor,
+          colorScheme: ColorScheme.fromSeed(seedColor: Utils.kPrimaryColor),
+          scaffoldBackgroundColor: Colors.white,
+          useMaterial3: true,
+          fontFamily: 'PlusJakartaSans',
+        ),
+        initialRoute: Routes.home,
+        getPages: Pages.all,
       ),
-      initialRoute: Routes.home,
-      getPages: Pages.all,
     );
   }
 }

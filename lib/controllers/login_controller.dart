@@ -2,13 +2,16 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ibadahku/constants/box_storage.dart';
 import 'package:ibadahku/constants/routes.dart';
+import 'package:ibadahku/screens/event/controllers/event_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginController extends GetxController {
   final SupabaseClient client = Supabase.instance.client;
 
   var emailController = TextEditingController();
+  var emailFocusNOde = FocusNode();
   var passwordController = TextEditingController();
 
   var nameController = TextEditingController();
@@ -22,8 +25,10 @@ class LoginController extends GetxController {
   var allBatch = [].obs;
 
   RxBool isHidePassword = true.obs;
-  RxBool isRemember = false.obs;
+  RxBool isRemember = true.obs;
   RxBool isLoading = false.obs;
+
+  RxBool isSendingEmail = false.obs;
 
   RxBool isSignUp = false.obs;
 
@@ -36,9 +41,17 @@ class LoginController extends GetxController {
     )
         .then((value) {
       isLoading.value = false;
-      if (isRemember.value) {}
+      if (isRemember.value) {
+        BoxStorage().save("email", emailController.text);
+      }
+
+      emailController.clear();
+      passwordController.clear();
+
+      Get.back();
+      Get.put(EventController()).fetchEventForCurrentUser();
+      Get.put(EventController()).fetchActiveEvent();
       Get.snackbar("Success", "Login Success");
-      Get.toNamed(Routes.home);
     }).onError((error, stackTrace) {
       isLoading.value = false;
       if (isRemember.value) {}
@@ -46,8 +59,6 @@ class LoginController extends GetxController {
       log(error.toString());
     }).whenComplete(() {
       isLoading.value = false;
-      emailController.clear();
-      passwordController.clear();
     });
   }
 

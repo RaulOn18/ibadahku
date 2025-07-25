@@ -1,15 +1,11 @@
 import 'package:get_storage/get_storage.dart';
 
 class BoxStorage {
-  void init() {
-    GetStorage.init();
+  Future<void> save(String key, dynamic value) async {
+    await GetStorage().write(key, value);
   }
 
-  void save(String key, dynamic value) {
-    GetStorage().write(key, value);
-  }
-
-  dynamic get(String key) {
-    return GetStorage().read(key);
+  Future<dynamic> get(String key) async {
+    return await GetStorage().read(key);
   }
 }

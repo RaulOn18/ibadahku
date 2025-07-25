@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ibadahku/screens/adzan_screen.dart';
 import 'package:ibadahku/screens/dizkr_screen.dart';
+import 'package:ibadahku/screens/event/views/event_detail_view.dart';
+import 'package:ibadahku/screens/event/views/event_list.dart';
+import 'package:ibadahku/screens/event/views/upload_bukti_kehadiran.dart';
 import 'package:ibadahku/screens/forgot_password_screen.dart';
 import 'package:ibadahku/screens/home_screen.dart';
 import 'package:ibadahku/screens/login_screen.dart';
 import 'package:ibadahku/screens/profile_screen.dart';
 import 'package:ibadahku/screens/quran/quran_detail_screen.dart';
 import 'package:ibadahku/screens/quran/quran_screen.dart';
+import 'package:ibadahku/screens/scan_qr/views/scan_qr_view.dart';
 import 'package:ibadahku/screens/sign_screen.dart';
 import 'package:ibadahku/screens/splash_screen.dart';
 import 'package:ibadahku/screens/yaumiyah_screen.dart';
@@ -26,6 +30,10 @@ class Routes {
   static const String forgotPassword = '/forgotPassword';
   static const String searchCity = '/searchCity';
   static const String profile = '/profile';
+  static const String event = '/event';
+  static const String eventDetail = '/eventDetail';
+  static const String scanQr = '/scanQr';
+  static const String uploadBuktiKehadiran = '/uploadBuktiKehadiran';
 }
 
 class Pages {
@@ -42,6 +50,10 @@ class Pages {
   static const String forgotPassword = Routes.forgotPassword;
   static const String searchCity = Routes.searchCity;
   static const String profile = Routes.profile;
+  static const String event = Routes.event;
+  static const String eventDetail = Routes.eventDetail;
+  static const String scanQr = Routes.scanQr;
+  static const String uploadBuktiKehadiran = Routes.uploadBuktiKehadiran;
 
   static List<GetPage> all = [
     GetPage(
@@ -79,59 +91,108 @@ class Pages {
     // ),
     GetPage(
       name: home,
-      page: () => const HomeScreen(),
+      page: () => const MaxWidthWrapper(child: HomeScreen()),
       transition: Transition.topLevel,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: adzan,
-      page: () => const AdzanScreen(),
+      page: () => const MaxWidthWrapper(child: AdzanScreen()),
       transition: Transition.topLevel,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: dizkr,
-      page: () => const DizkrScreen(),
+      page: () => const MaxWidthWrapper(child: DizkrScreen()),
       transition: Transition.topLevel,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: yaumiyah,
-      page: () => const YaumiyahScreen(),
+      page: () => const MaxWidthWrapper(child: YaumiyahScreen()),
       transition: Transition.downToUp,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: quran,
-      page: () => const QuranScreen(),
+      page: () => const MaxWidthWrapper(child: QuranScreen()),
       transition: Transition.downToUp,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: quranDetail,
-      page: () => const QuranDetailScreen(),
+      page: () => const MaxWidthWrapper(child: QuranDetailScreen()),
       transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
     GetPage(
       name: profile,
-      page: () => const ProfileScreen(),
+      page: () => const MaxWidthWrapper(child: ProfileScreen()),
       transition: Transition.topLevel,
       transitionDuration: const Duration(milliseconds: 500),
       curve: Curves.fastLinearToSlowEaseIn,
     ),
-    // GetPage(
-    //   name: search,
-    //   page: () => const SearchView(),
-    //   transition: Transition.upToDown,
-    //   transitionDuration: const Duration(milliseconds: 200),
-    //   curve: Curves.fastLinearToSlowEaseIn,
-    // ),
+    GetPage(
+      name: event,
+      page: () => const MaxWidthWrapper(
+        child: EventListScreen(),
+      ),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    ),
+    GetPage(
+      name: eventDetail,
+      page: () => const MaxWidthWrapper(
+        child: EventDetailScreen(),
+      ),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    ),
+    GetPage(
+      name: scanQr,
+      page: () => const MaxWidthWrapper(
+        child: ScanQrScreen(),
+      ),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    ),
+    GetPage(
+      name: uploadBuktiKehadiran,
+      page: () => const MaxWidthWrapper(
+        child: UploadBuktiKehadiran(),
+      ),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    )
   ];
+}
+
+class MaxWidthWrapper extends StatelessWidget {
+  const MaxWidthWrapper({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return Center(
+      // Optional: To center the content on wider screens
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: screenWidth > 768.0 ? 768.0 : double.infinity,
+        ),
+        child: child,
+      ),
+    );
+  }
 }

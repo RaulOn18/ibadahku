@@ -225,6 +225,50 @@ class _YaumiyahScreenState extends State<YaumiyahScreen> {
                   calculatePercentages();
                 });
               }),
+          const Spacer(),
+          // IconButton(
+          //   onPressed: () async {
+          //     Future<void> handle() async {
+          //       for (final dateString in controller.listDateForReport) {
+          //         try {
+          //           final parsedDate = DateTime.parse(dateString);
+          //           final startDate = DateTime(2025, 4, 1);
+          //           final endDate = DateTime(2025, 4, 9);
+
+          //           const isFilter = false;
+
+          //           if (isFilter) {
+          //             if (parsedDate.isAfter(
+          //                     startDate.subtract(const Duration(days: 1))) &&
+          //                 parsedDate
+          //                     .isBefore(endDate.add(const Duration(days: 1)))) {
+          //               // log("Tanggal dalam rentang: $dateString");
+          //             } else {
+          //               controller.insertDailyRecordsForDate(dateString);
+          //               // log("Tanggal di luar rentang: $dateString");
+          //             }
+          //           } else {
+          //             await controller.insertDailyRecordsForDate(dateString);
+          //           }
+          //         } catch (e) {
+          //           log("Format tanggal tidak valid: $dateString - $e");
+          //         }
+          //       }
+          //     }
+
+          //     await handle();
+          //     ScaffoldMessenger.of(context)
+          //       ..clearSnackBars()
+          //       ..showSnackBar(const SnackBar(
+          //         content: Text("Berhasil memasukkan data"),
+          //       ));
+          //   },
+          //   icon: const Icon(
+          //     IconsaxPlusBold.calendar,
+          //     size: 20,
+          //     color: Colors.white,
+          //   ),
+          // )
         ],
       ),
     );

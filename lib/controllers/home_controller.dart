@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:get/get.dart';
@@ -5,12 +6,16 @@ import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:ibadahku/constants/box_storage.dart';
 import 'package:ibadahku/core/provider/api/api_constants.dart';
+import 'package:ibadahku/screens/app_version_view.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeController extends GetxController {
   final dio.Dio _dio = dio.Dio();
+  final SupabaseClient _supabaseClient = Supabase.instance.client;
 
-  RxBool isLoading = true.obs;
+  // RxBool isLoading = true.obs;
 
   final RxList<dynamic> allCity = <dynamic>[].obs;
   final TextEditingController searchController = TextEditingController();
@@ -28,12 +33,11 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     _initializeLocationData();
-    Future.delayed(const Duration(milliseconds: 300), () => isLoading.value = false);
   }
 
-  void _initializeLocationData() {
-    final cityNameStorage = BoxStorage().get("name_current_city");
-    final cityIdStorage = BoxStorage().get("id_current_city");
+  void _initializeLocationData() async {
+    final cityNameStorage = await BoxStorage().get("name_current_city");
+    final cityIdStorage = await BoxStorage().get("id_current_city");
 
     if (cityNameStorage != null && cityNameStorage.isNotEmpty) {
       currentCity.value = cityNameStorage;
@@ -83,13 +87,6 @@ class HomeController extends GetxController {
         }
       }
     });
-
-    // if (currentPrayerTime.value == "--:--") {
-    //   requestDataPrayerTime(
-    //     currentCityId.value,
-    //     date.add(const Duration(days: 1)),
-    //   );
-    // }
   }
 
   DateTime _parsePrayerDateTime(DateTime date, String time) {
@@ -119,7 +116,8 @@ class HomeController extends GetxController {
 
   Future<void> requestAllDataCity() async {
     try {
-      final response = await _dio.get("${ApiConstants.baseUrl}sholat/kota/semua");
+      final response =
+          await _dio.get("${ApiConstants.baseUrl}sholat/kota/semua");
       if (response.data != null) {
         allCity.value = response.data["data"];
       }
@@ -137,6 +135,29 @@ class HomeController extends GetxController {
       }
     } catch (e) {
       log("Error searching city: $e");
+    }
+  }
+
+  Future<void> checkUpdate() async {
+    try {
+      var version = await _supabaseClient.from('app_version').select().single();
+      final currentVersion = version['latest_version'].toString();
+      final link = Uri.parse(version['link'].toString());
+      final latestVersion =
+          await PackageInfo.fromPlatform().then((info) => info.version);
+      if (currentVersion != latestVersion) {
+        // Show update dialog
+        showModalBottomSheet(
+          isDismissible: false,
+          constraints:
+              BoxConstraints(maxWidth: Get.width, maxHeight: Get.height * 0.4),
+          context: Get.context!,
+          builder: (context) =>
+              AppVersionView(version: currentVersion, link: link),
+        );
+      }
+    } catch (e, stackTrace) {
+      log("Error checking update: $e, $stackTrace");
     }
   }
 }

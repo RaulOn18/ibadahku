@@ -2,7 +2,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart' hide CarouselController;
 
 class CustomDropDownWithLabel extends StatelessWidget {
-  CustomDropDownWithLabel({
+  const CustomDropDownWithLabel({
     super.key,
     required this.label,
     Color? labelColor,
@@ -100,7 +100,7 @@ class CustomDropDownWithLabel extends StatelessWidget {
             "Select $label",
             style: const TextStyle(
                 fontSize: 14,
-                color:Colors.grey,
+                color: Colors.grey,
                 fontWeight: FontWeight.normal,
                 overflow: TextOverflow.ellipsis),
           ),

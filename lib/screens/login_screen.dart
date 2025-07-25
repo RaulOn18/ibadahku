@@ -1,13 +1,12 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:ibadahku/components/custom_button.dart';
 import 'package:ibadahku/components/custom_checkbox.dart';
+import 'package:ibadahku/constants/box_storage.dart';
 import 'package:ibadahku/controllers/login_controller.dart';
-import 'package:ibadahku/screens/forgot_password_screen.dart';
 import 'package:ibadahku/utils/utils.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,10 +17,19 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final SupabaseClient client = Supabase.instance.client;
   var formKey = GlobalKey<FormState>();
 
   var loginController = Get.put(LoginController());
+
+  @override
+  void initState() {
+    super.initState();
+    BoxStorage().get("email").then((value) {
+      if (value != null) {
+        loginController.emailController.text = value;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: loginController.emailController,
                   keyboardType: TextInputType.emailAddress,
+                  focusNode: loginController.emailFocusNOde,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(
                       IconsaxPlusLinear.sms,
@@ -170,13 +179,185 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     InkWell(
                       onTap: () {
-                        // redirect to website url https://ibadahku-web.vercel.app/users
-                        try {
-                          launchUrl(Uri.parse(
-                              "https://ibadahku-web.vercel.app/users"));
-                        } catch (e, stackTrace) {
-                          debugPrint("Error: $e $stackTrace");
-                        }
+                        showModalBottomSheet(
+                          backgroundColor: Utils.kWhiteColor,
+                          showDragHandle: true,
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width,
+                            maxHeight: MediaQuery.of(context).size.height * 0.3,
+                          ),
+                          context: context,
+                          builder: (context) => Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 20,
+                            ),
+                            child: Row(
+                              spacing: 8,
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(8),
+                                    onTap: () {
+                                      double percentage = 8.70123;
+                                      var int = percentage.round();
+
+                                      debugPrint(int.toString()); // 9
+
+                                      try {
+                                        launchUrl(Uri.parse(
+                                            "https://ibadahku-web.vercel.app/users"));
+                                      } catch (e, stackTrace) {
+                                        debugPrint("Error: $e $stackTrace");
+                                      }
+                                    },
+                                    child: Ink(
+                                      decoration: BoxDecoration(
+                                        color: Utils.kWhiteColor,
+                                        border: Border.all(
+                                          color: Utils.kPrimaryColor,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Icon(IconsaxPlusBold.sms,
+                                              color: Utils.kPrimaryColor),
+                                          Text(
+                                            "Lupa Email?",
+                                            style: TextStyle(
+                                              color: Utils.kPrimaryColor,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(8),
+                                    onTap: () async {
+                                      // forgot password supabase
+                                      if (loginController
+                                          .emailController.text.isEmpty) {
+                                        Get.back();
+
+                                        ScaffoldMessenger.of(Get.context!)
+                                          ..clearSnackBars()
+                                          ..showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                "Please enter your email",
+                                              ),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              showCloseIcon: true,
+                                            ),
+                                          );
+
+                                        loginController.emailFocusNOde
+                                            .requestFocus();
+
+                                        return;
+                                      }
+                                      loginController.isSendingEmail.value =
+                                          true;
+
+                                      // send message to whatsapp
+                                      try {
+                                        await launchUrl(Uri.parse(
+                                            "https://api.whatsapp.com/send?phone=6283852137645&text=Halo%20saya%20lupa%20password%20akun%20saya%20${loginController.emailController.text}"));
+                                      } catch (e, stackTrace) {
+                                        debugPrint("Error: $e $stackTrace");
+                                      }
+
+                                      // await Supabase.instance.client.auth
+                                      //     .resetPasswordForEmail(loginController
+                                      //         .emailController.text)
+                                      //     .then((value) {
+                                      //   Get.back();
+                                      //   ScaffoldMessenger.of(Get.context!)
+                                      //     ..clearSnackBars()
+                                      //     ..showSnackBar(
+                                      //       const SnackBar(
+                                      //         content: Text(
+                                      //             "Check your email to reset password"),
+                                      //         behavior:
+                                      //             SnackBarBehavior.floating,
+                                      //         showCloseIcon: true,
+                                      //       ),
+                                      //     );
+                                      // }).onError((error, stackTrace) {
+                                      //   log("Error: when reset password $error $stackTrace");
+                                      //   Get.back();
+                                      //   ScaffoldMessenger.of(Get.context!)
+                                      //     ..clearSnackBars()
+                                      //     ..showSnackBar(
+                                      //       const SnackBar(
+                                      //         content: Text(
+                                      //             "Failed to reset password"),
+                                      //         behavior:
+                                      //             SnackBarBehavior.floating,
+                                      //         showCloseIcon: true,
+                                      //       ),
+                                      //     );
+                                      // });
+                                      loginController.isSendingEmail.value =
+                                          false;
+                                    },
+                                    child: Ink(
+                                      decoration: BoxDecoration(
+                                        color: Utils.kPrimaryColor,
+                                        border: Border.all(
+                                            color: Utils.kWhiteColor),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Obx(
+                                        () => Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            if (loginController
+                                                .isSendingEmail.value)
+                                              const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  color: Utils.kWhiteColor,
+                                                  semanticsLabel: 'Loading',
+                                                ),
+                                              )
+                                            else
+                                              const Icon(IconsaxPlusBold.lock,
+                                                  color: Utils.kWhiteColor),
+                                            const Text(
+                                              "Lupa Password?",
+                                              style: TextStyle(
+                                                color: Utils.kWhiteColor,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
                       },
                       child: const Text(
                         "Lupa Akun?",
@@ -186,43 +367,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 28),
+
                 Obx(
-                  () => ElevatedButton(
-                    style: ButtonStyle(
-                      elevation: WidgetStateProperty.all(0),
-                      backgroundColor:
-                          WidgetStateProperty.all(Utils.kPrimaryColor),
-                      foregroundColor: WidgetStateProperty.all(Colors.white),
-                      shape: WidgetStateProperty.all(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                      ),
-                      minimumSize: WidgetStateProperty.all(
-                          const Size(double.infinity, 50)), // Custom height
-                    ),
-                    onPressed: () {
+                  () => CustomButton(
+                    backgroundColor: Utils.kPrimaryColor,
+                    textColor: Colors.white,
+                    onTap: () {
                       if (loginController.isLoading.value) return;
                       if (formKey.currentState!.validate()) {
                         loginController.login();
                       }
                     },
-                    child: loginController.isLoading.value
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              semanticsLabel: 'Loading',
-                            ),
-                          )
-                        : const Text(
-                            "Sign in",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    isLoading: loginController.isLoading.value,
+                    text: "Sign in",
                   ),
                 ),
                 const SizedBox(height: 12),
