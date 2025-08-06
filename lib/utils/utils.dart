@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class Utils {
   static const kPrimaryColor = Color(0xff008eca);
@@ -47,4 +48,9 @@ class Utils {
   //   900: Color(0xff160e5d),
   // });
   // static const kSecondaryColor = Color(0xff6079f7);
+
+  static Future<String> getAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    return packageInfo.version;
+  }
 }

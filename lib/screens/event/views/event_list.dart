@@ -242,89 +242,91 @@ class _EventListScreenState extends State<EventListScreen> {
                               "${event.attendedCount}/${event.eligibleCount}",
                             ),
                             const Spacer(),
-                            SizedBox(
-                              width: 72,
-                              height: 38,
-                              child: Obx(
-                                () => CustomButton(
-                                  fontSize: 12,
-                                  backgroundColor: Utils.kPrimaryColor,
-                                  textColor: Colors.white,
-                                  onTap: () async {
-                                    controller.isCheckingAttendance.value =
-                                        true;
-                                    try {
-                                      if (event.isAttended) {
-                                        ScaffoldMessenger.of(Get.context!)
-                                          ..clearSnackBars()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "Anda sudah absen silahkan upload bukti kehadiran",
-                                              ),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              showCloseIcon: true,
-                                            ),
-                                          );
-                                        Get.toNamed(Routes.uploadBuktiKehadiran,
-                                            arguments: event.id);
-                                        return;
-                                      }
-                                      if (event.status != "active") {
-                                        ScaffoldMessenger.of(Get.context!)
-                                          ..clearSnackBars()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "Acara sudah selesai",
-                                              ),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              showCloseIcon: true,
-                                            ),
-                                          );
-                                        return;
-                                      }
-                                      if (event.qrValue == "") {
-                                        ScaffoldMessenger.of(Get.context!)
-                                          ..clearSnackBars()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "QR Code belum dibuat, silahkan hubungi panitia",
-                                              ),
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              showCloseIcon: true,
-                                            ),
-                                          );
-                                        return;
-                                      }
+                            event.isAttended
+                                ? const CustomBadge(
+                                    text: "Sudah Absen", color: Colors.green)
+                                : SizedBox(
+                                    width: 72,
+                                    height: 38,
+                                    child: CustomButton(
+                                      fontSize: 12,
+                                      backgroundColor: Utils.kPrimaryColor,
+                                      textColor: Colors.white,
+                                      onTap: () async {
+                                        controller.isCheckingAttendance.value =
+                                            true;
+                                        try {
+                                          if (event.isAttended) {
+                                            ScaffoldMessenger.of(Get.context!)
+                                              ..clearSnackBars()
+                                              ..showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    "Anda sudah absen silahkan upload bukti kehadiran",
+                                                  ),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  showCloseIcon: true,
+                                                ),
+                                              );
+                                            Get.toNamed(
+                                                Routes.uploadBuktiKehadiran,
+                                                arguments: event.id);
+                                            return;
+                                          }
+                                          if (event.status != "active") {
+                                            ScaffoldMessenger.of(Get.context!)
+                                              ..clearSnackBars()
+                                              ..showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    "Acara sudah selesai",
+                                                  ),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  showCloseIcon: true,
+                                                ),
+                                              );
+                                            return;
+                                          }
+                                          if (event.qrValue == "") {
+                                            ScaffoldMessenger.of(Get.context!)
+                                              ..clearSnackBars()
+                                              ..showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    "QR Code belum dibuat, silahkan hubungi panitia",
+                                                  ),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  showCloseIcon: true,
+                                                ),
+                                              );
+                                            return;
+                                          }
 
-                                      Get.toNamed(
-                                        Routes.scanQr,
-                                        // arguments: ScanQrArgs(
-                                        //   qrValue: event.qrValue,
-                                        //   title:
-                                        //       "${event.name.toString().capitalize}",
-                                        //   description:
-                                        //       "Scan QR Code untuk absen acara",
-                                        // ),
-                                      );
-                                    } catch (e, stackTrace) {
-                                      log("Error: when check attendance $e $stackTrace");
-                                    } finally {
-                                      controller.isCheckingAttendance.value =
-                                          false;
-                                    }
-                                  },
-                                  isLoading:
-                                      controller.isCheckingAttendance.value,
-                                  text: "Absen",
-                                ),
-                              ),
-                            ),
+                                          Get.toNamed(
+                                            Routes.scanQr,
+                                            // arguments: ScanQrArgs(
+                                            //   qrValue: event.qrValue,
+                                            //   title:
+                                            //       "${event.name.toString().capitalize}",
+                                            //   description:
+                                            //       "Scan QR Code untuk absen acara",
+                                            // ),
+                                          );
+                                        } catch (e, stackTrace) {
+                                          log("Error: when check attendance $e $stackTrace");
+                                        } finally {
+                                          controller.isCheckingAttendance
+                                              .value = false;
+                                        }
+                                      },
+                                      isLoading:
+                                          controller.isCheckingAttendance.value,
+                                      text: "Absen",
+                                    ),
+                                  ),
                           ],
                         )
                       ],

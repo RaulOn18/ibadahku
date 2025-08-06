@@ -39,7 +39,12 @@ class UserController extends GetxController {
   }
 
   void logout() async {
-    await _client.auth.signOut();
-    Get.offAllNamed(Routes.home);
+    try {
+      await _client.from('user_fcm_token').delete().eq('user_id', id);
+      await _client.auth.signOut();
+      Get.offAllNamed(Routes.home);
+    } catch (e, stackTrace) {
+      log("Error: when logout $e $stackTrace");
+    }
   }
 }

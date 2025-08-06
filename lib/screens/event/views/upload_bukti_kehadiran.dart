@@ -30,9 +30,13 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
       Supabase.instance.client; // Inisialisasi Supabase Client
 
   // Cek apakah event ini memerlukan resume berdasarkan typeName
-  bool get _requiresResume =>
-      event.typeName.toLowerCase() == 'kajian' ||
-      event.typeName.toLowerCase() == 'seminar';
+  // bool get _requiresResume =>
+  //     event.typeName.toLowerCase() == 'kajian' ||
+  //     event.typeName.toLowerCase() == 'seminar';
+
+  // Resume sekarang opsional untuk semua jenis event
+  bool get _showResumeSection =>
+      true; // Selalu tampilkan section resume sebagai opsional
 
   @override
   void initState() {
@@ -45,8 +49,36 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
 
   Future<void> _pickPhoto() async {
     try {
-      final XFile? pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+      // Tampilkan dialog untuk memilih sumber foto
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Pilih Sumber Foto'),
+            content: const Text(
+                'Pilih dari mana Anda ingin mengambil foto kehadiran:'),
+            actions: [
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop('camera'),
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Kamera'),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop('gallery'),
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Galeri'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (choice == null) return;
+
+      ImageSource source =
+          choice == 'camera' ? ImageSource.camera : ImageSource.gallery;
+
+      final XFile? pickedFile = await ImagePicker().pickImage(source: source);
       if (pickedFile != null) {
         setState(() {
           _photoFile = File(pickedFile.path);
@@ -59,23 +91,67 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
 
   Future<void> _pickResume() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: [
-          'pdf',
-          'doc',
-          'docx',
-          'txt'
-        ], // Format yang diizinkan
+      // Tampilkan dialog untuk memilih sumber file
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Pilih Sumber File'),
+            content: const Text(
+                'Pilih dari mana Anda ingin mengambil file resume/catatan:'),
+            actions: [
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop('camera'),
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Kamera'),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop('gallery'),
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Galeri'),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop('file'),
+                icon: const Icon(Icons.insert_drive_file),
+                label: const Text('File PDF'),
+              ),
+            ],
+          );
+        },
       );
 
-      if (result != null && result.files.single.path != null) {
-        setState(() {
-          _resumeFile = File(result.files.single.path!);
-        });
+      if (choice == null) return;
+
+      if (choice == 'camera') {
+        final XFile? pickedFile =
+            await ImagePicker().pickImage(source: ImageSource.camera);
+        if (pickedFile != null) {
+          setState(() {
+            _resumeFile = File(pickedFile.path);
+          });
+        }
+      } else if (choice == 'gallery') {
+        final XFile? pickedFile =
+            await ImagePicker().pickImage(source: ImageSource.gallery);
+        if (pickedFile != null) {
+          setState(() {
+            _resumeFile = File(pickedFile.path);
+          });
+        }
+      } else if (choice == 'file') {
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+        );
+
+        if (result != null && result.files.single.path != null) {
+          setState(() {
+            _resumeFile = File(result.files.single.path!);
+          });
+        }
       }
     } catch (e) {
-      _showSnackBar('Gagal memilih resume: $e', isError: true);
+      _showSnackBar('Gagal memilih file: $e', isError: true);
     }
   }
 
@@ -113,11 +189,7 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
       _showSnackBar('Silakan unggah bukti foto kehadiran.', isError: true);
       return;
     }
-    if (_requiresResume && _resumeFile == null) {
-      _showSnackBar('Acara ini memerlukan unggahan resume (PDF/DOCX/TXT).',
-          isError: true);
-      return;
-    }
+    // Resume sekarang opsional, tidak perlu validasi wajib
 
     setState(() {
       _isLoading = true;
@@ -134,8 +206,8 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
         throw Exception('Gagal mengunggah foto.');
       }
 
-      // Unggah resume jika diperlukan
-      if (_requiresResume && _resumeFile != null) {
+      // Unggah resume jika ada file yang dipilih
+      if (_resumeFile != null) {
         resumeUrl = await _uploadFile(_resumeFile!, 'event-attachments',
             'resumes'); // Ganti 'event-attachments' dengan nama bucket Storage kamu
         if (resumeUrl == null) {
@@ -256,22 +328,23 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
                     fileTypeHint: 'Format: JPG, PNG',
                   ),
                   const SizedBox(height: 30),
-                  if (_requiresResume) ...[
-                    _buildSectionTitle(context, 'Unggah Resume/Catatan',
+                  if (_showResumeSection) ...[
+                    _buildSectionTitle(
+                        context, 'Unggah Resume/Catatan (Opsional)',
                         subtitle:
-                            'Acara tipe "${event.typeName}" ini memerlukan resume. (PDF, DOCX, TXT)'),
+                            'Anda dapat mengunggah foto catatan, gambar, atau file PDF sebagai dokumentasi tambahan.'),
                     _buildUploadCard(
                       context,
-                      title: 'Resume/Catatan',
+                      title: 'Resume/Catatan (Opsional)',
                       subtitle:
-                          'Unggah file resume atau catatan penting Anda dari acara ini.',
+                          'Unggah foto catatan, gambar, atau file PDF sebagai dokumentasi tambahan (opsional).',
                       file: _resumeFile,
                       onPick: _pickResume,
                       icon: Icons.description,
                       buttonText: _resumeFile == null
-                          ? 'Pilih File Resume'
-                          : 'Ganti File Resume',
-                      fileTypeHint: 'Format: PDF, DOCX, TXT',
+                          ? 'Pilih File/Foto'
+                          : 'Ganti File/Foto',
+                      fileTypeHint: 'Format: JPG, PNG, PDF, DOCX, TXT',
                     ),
                     const SizedBox(height: 30),
                   ],
@@ -508,18 +581,22 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
                   )
                 : Column(
                     children: [
-                      // Menampilkan thumbnail gambar jika itu foto
-                      if (title == 'Foto Kehadiran' &&
-                          RegExp(r'\.(jpeg|jpg|png|gif)$', caseSensitive: false)
-                              .hasMatch(file.path.toLowerCase()))
+                      // Menampilkan thumbnail untuk gambar (baik foto kehadiran maupun resume)
+                      if (RegExp(r'\.(jpeg|jpg|png|gif)$', caseSensitive: false)
+                          .hasMatch(file.path.toLowerCase()))
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: Image.file(
                             file,
                             height: 150,
+                            width: double.infinity,
                             fit: BoxFit.cover,
                           ),
                         )
+                      else if (RegExp(r'\.pdf$', caseSensitive: false)
+                          .hasMatch(file.path.toLowerCase()))
+                        const Icon(Icons.picture_as_pdf,
+                            size: 100, color: Colors.red)
                       else // Menampilkan ikon generik untuk file lain
                         const Icon(Icons.insert_drive_file,
                             size: 100, color: Colors.white70),
@@ -553,7 +630,7 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
     return DateFormat('EEEE, dd MMMM yyyy').format(dateTime);
   }
 
-  String _formatTime(DateTime dateTime) {
-    return DateFormat('HH:mm').format(dateTime);
-  }
+  // String _formatTime(DateTime dateTime) {
+  //   return DateFormat('HH:mm').format(dateTime);
+  // }
 }

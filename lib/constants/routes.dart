@@ -14,6 +14,7 @@ import 'package:ibadahku/screens/quran/quran_screen.dart';
 import 'package:ibadahku/screens/scan_qr/views/scan_qr_view.dart';
 import 'package:ibadahku/screens/sign_screen.dart';
 import 'package:ibadahku/screens/splash_screen.dart';
+import 'package:ibadahku/screens/survey/views/survey_view.dart';
 import 'package:ibadahku/screens/yaumiyah_screen.dart';
 
 class Routes {
@@ -34,6 +35,7 @@ class Routes {
   static const String eventDetail = '/eventDetail';
   static const String scanQr = '/scanQr';
   static const String uploadBuktiKehadiran = '/uploadBuktiKehadiran';
+  static const String survey = '/survey';
 }
 
 class Pages {
@@ -54,6 +56,7 @@ class Pages {
   static const String eventDetail = Routes.eventDetail;
   static const String scanQr = Routes.scanQr;
   static const String uploadBuktiKehadiran = Routes.uploadBuktiKehadiran;
+  static const String survey = Routes.survey;
 
   static List<GetPage> all = [
     GetPage(
@@ -173,7 +176,13 @@ class Pages {
       transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-    )
+    ),
+    GetPage(
+      name: survey,
+      page: () => const MaxWidthWrapper(
+        child: SurveyView(),
+      ),
+    ),
   ];
 }
 

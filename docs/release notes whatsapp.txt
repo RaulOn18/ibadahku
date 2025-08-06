@@ -1,0 +1,71 @@
+📢 *PENGUMUMAN UPDATE APLIKASI IBADAHKU v1.0.3*
+
+_Assalamu'alaikum Warahmatullahi Wabarakatuh_
+
+🎉 *UPDATE TERBARU APLIKASI IBADAHKU!* 🎉
+
+🔔 *FITUR BARU UTAMA:*
+
+⏰ *Pengingat Mutabaah Yaumiyah Otomatis*
+✅ Notifikasi otomatis setiap hari jam *19:30 WIB*  
+✅ Klik notifikasi → langsung ke halaman Mutabaah  
+✅ Sudah aktif otomatis saat install  
+✅ Bisa diatur on/off di halaman Profile  
+
+🔔 *Feature Attendance Event*  
+✅ Scan QR Code Event dari panitia  
+✅ Upload bukti kehadiran setelah scan  
+✅ Lihat list event: sedang, akan, dan sudah berlangsung  
+
+📝 *Feature Blog / Announcement*  
+✅ List blog/pengumuman dari manajemen  
+✅ Bisa dibaca langsung di aplikasi  
+
+🚀 *PERBAIKAN:*  
+🔹 Aplikasi lebih ringan & cepat  
+🔹 Perbaikan bug & error  
+🔹 Kompatibilitas Android 12+  
+🔹 Sistem permission yang lebih baik  
+
+📱 *CARA UPDATE:*  
+
+*Pengguna Lama:*  
+1. Uninstall aplikasi lama  
+2. Download APK v1.0.3  
+3. Install & login kembali  
+
+*Pengguna Baru:*  
+1. Download & install APK v1.0.3  
+2. Daftar/login akun  
+3. Pengingat otomatis aktif!  
+
+📋 *CARA PAKAI FITUR BARU:*  
+1. Buka *Profile* → cari *"Pengingat Mutabaah"*  
+2. Toggle on/off sesuai kebutuhan  
+3. Test notifikasi dengan tombol test  
+4. Tunggu notifikasi jam 19:30 setiap hari! 🔔  
+
+⚠️ *PENTING:*  
+🔸 Wajib update untuk semua mahasiswa  
+🔸 Izinkan notifikasi saat install  
+🔸 Android 12+: aktifkan *"Schedule exact alarm"*  
+🔸 Jika ada masalah, hubungi tim IT  
+
+🎯 *MANFAAT:*  
+✅ Lebih konsisten isi Mutabaah  
+✅ Reminder otomatis setiap hari  
+✅ Akses cepat ke halaman Mutabaah  
+✅ Tingkatkan kualitas ibadah harian  
+
+📥 *Download APK v1.0.3:*  
+https://dub.sh/ibadahkuapp  
+📦 Ukuran: ~81 MB  
+📱 Android: 6.0 - 14+
+
+_Barakallahu fiikum wa jazakumullahu khairan_  
+Semoga fitur baru ini membantu kita semua lebih konsisten dalam mengisi Mutabaah Yaumiyah dan meningkatkan kualitas ibadah harian 🤲
+
+#IbadahkuApp #STAIDaarutTauhiid #UpdateTerbaru
+
+_Tim Pengembang Ibadahku_  
+_STAI Daarut Tauhiid_

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:ibadahku/constants/box_storage.dart';
+import 'package:ibadahku/controllers/mutabaah_controller.dart';
 import 'package:ibadahku/core/provider/api/api_constants.dart';
 import 'package:ibadahku/screens/app_version_view.dart';
 import 'package:intl/intl.dart';
@@ -33,6 +34,12 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     _initializeLocationData();
+    _initializeMutabaahController();
+  }
+
+  void _initializeMutabaahController() {
+    // Initialize MutabaahController to handle notifications
+    Get.put(MutabaahController());
   }
 
   void _initializeLocationData() async {
@@ -138,7 +145,7 @@ class HomeController extends GetxController {
     }
   }
 
-  Future<void> checkUpdate() async {
+  Future<void> checkUpdate({required bool isShowNotUpdateAvailable}) async {
     try {
       var version = await _supabaseClient.from('app_version').select().single();
       final currentVersion = version['latest_version'].toString();
@@ -155,6 +162,18 @@ class HomeController extends GetxController {
           builder: (context) =>
               AppVersionView(version: currentVersion, link: link),
         );
+      }
+      if (currentVersion == latestVersion) {
+        log("No update available");
+        if (isShowNotUpdateAvailable) {
+          ScaffoldMessenger.of(Get.context!)
+            ..clearSnackBars()
+            ..showSnackBar(const SnackBar(
+              content: Text("Tidak ada update yang tersedia"),
+              behavior: SnackBarBehavior.floating,
+              showCloseIcon: true,
+            ));
+        }
       }
     } catch (e, stackTrace) {
       log("Error checking update: $e, $stackTrace");

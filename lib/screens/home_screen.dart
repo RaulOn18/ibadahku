@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,10 +10,14 @@ import 'package:ibadahku/components/custom_button.dart';
 import 'package:ibadahku/components/custom_title_header_home.dart';
 import 'package:ibadahku/constants/box_storage.dart';
 import 'package:ibadahku/constants/routes.dart';
+import 'package:ibadahku/controllers/announcement_controller.dart';
 import 'package:ibadahku/controllers/home_controller.dart';
 import 'package:ibadahku/core/services/log_service.dart';
 import 'package:ibadahku/screens/event/controllers/event_controller.dart';
 import 'package:ibadahku/screens/scan_qr/views/scan_qr_view.dart';
+import 'package:ibadahku/screens/announcement/views/announcement_list_view.dart';
+import 'package:ibadahku/screens/announcement/views/announcement_detail_view.dart';
+import 'package:ibadahku/screens/survey/views/survey_info_view.dart';
 import 'package:ibadahku/utils/utils.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:intl/intl.dart';
@@ -32,6 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final DraggableScrollableController _draggableScrollableController =
       DraggableScrollableController();
   final HomeController _homeController = Get.put(HomeController());
+  final AnnouncementController _announcementController =
+      Get.put(AnnouncementController());
+  final EventController _eventController = Get.put(EventController());
 
   final GlobalKey _scanQRKey = GlobalKey();
   final GlobalKey _yaumiyahKey = GlobalKey();
@@ -42,20 +50,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeData();
-    _setupTimer();
-    // device is not web
-    if (context.mounted && !kIsWeb) {
-      _homeController.checkUpdate();
-    }
-
-    if (client.auth.currentUser != null) {
-      Get.put(EventController()).fetchEventForCurrentUser();
-      Get.put(EventController()).fetchActiveEvent();
-    }
 
     if (context.mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        _setupTimer();
+        _initializeData();
+        if (!kIsWeb) {
+          _homeController.checkUpdate(isShowNotUpdateAvailable: false);
+        }
         final isShow = await BoxStorage().get("showcase_home");
         if (isShow != true) {
           debugPrint("Showcase home before $isShow");
@@ -85,6 +87,13 @@ class _HomeScreenState extends State<HomeScreen> {
       _homeController.requestDataPrayerTime(
           _homeController.currentCityId.value, _currentDate);
     }
+
+    if (client.auth.currentUser != null) {
+      _announcementController.fetchAnnouncement();
+      _eventController.fetchEventForCurrentUser();
+      _eventController.fetchActiveEvent();
+      _checkIsUsersHasSubmittedSurveys();
+    }
   }
 
   void _setupTimer() {
@@ -106,6 +115,40 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     });
+  }
+
+  Future<void> _checkIsUsersHasSubmittedSurveys() async {
+    try {
+      final activeSurveyId = await client.rpc('get_active_survey_id');
+
+      if (activeSurveyId == null) {
+        return;
+      }
+
+      log("Active survey id: $activeSurveyId");
+
+      final response = await client.rpc("has_user_submitted_survey", params: {
+        'p_survey_id': activeSurveyId,
+        'p_user_id': client.auth.currentUser!.id
+      }) as bool;
+
+      if (response == false) {
+        log("User has not submitted survey");
+        showModalBottomSheet(
+          useSafeArea: true,
+          isDismissible: false,
+          showDragHandle: true,
+          enableDrag: false,
+          context: Get.context!,
+          backgroundColor: Utils.kWhiteColor,
+          builder: (context) => SurveyInfoView(
+            surveyId: activeSurveyId.toString(),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      log("Error: when check survey $e $stackTrace");
+    }
   }
 
   @override
@@ -145,8 +188,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (client.auth.currentUser != null)
                       {
                         Get.to(() => const ScanQrScreen(),
-                            arguments: ScanQrArgs(
-                                title: "", description: "", qrValue: "")),
+                                arguments: ScanQrArgs(
+                                    title: "", description: "", qrValue: ""))
+                            ?.then((_) {
+                          _initializeData();
+                        }),
                       }
                   });
               return;
@@ -268,7 +314,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ));
             Get.toNamed(Routes.login)?.then((_) {
               if (client.auth.currentUser != null) {
-                Get.toNamed(Routes.profile);
+                Get.toNamed(Routes.profile)?.then((_) {
+                  _initializeData();
+                });
               }
             });
           }
@@ -394,13 +442,14 @@ class _HomeScreenState extends State<HomeScreen> {
             onRefresh: () async {
               // fetch data event and news
               _initializeData();
+              // init again
             },
             child: CustomScrollView(
               controller: scrollController,
               scrollDirection: Axis.vertical,
               physics: const ClampingScrollPhysics(),
               slivers: [
-                const SliverAppBar(
+                SliverAppBar(
                   pinned: true,
                   floating: true,
                   snap: true,
@@ -412,9 +461,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   centerTitle: true,
                   toolbarHeight: 40,
                   titleSpacing: 0.0,
-                  title: Text(
-                    "v1.0.2",
-                    style: TextStyle(fontSize: 14),
+                  title: FutureBuilder(
+                    future: Utils.getAppVersion(),
+                    builder: (context, snapshot) => Text(
+                      "v${snapshot.data ?? '-'}",
+                      style: const TextStyle(fontSize: 14),
+                    ),
                   ),
                 ),
                 SliverList(
@@ -505,7 +557,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         (_) => {
                           if (client.auth.currentUser != null)
                             {
-                              Get.toNamed(Routes.yaumiyah),
+                              Get.toNamed(Routes.yaumiyah)?.then((_) {
+                                log("BACK FROM YAUMIYAH");
+                                _initializeData();
+                              }),
                             }
                         },
                       );
@@ -697,7 +752,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ));
                   Get.toNamed(Routes.login)?.then((v) {
                     if (client.auth.currentUser != null) {
-                      Get.toNamed(Routes.event);
+                      Get.toNamed(Routes.event)?.then((_) {
+                        _initializeData();
+                      });
                     }
                   });
                   return;
@@ -715,7 +772,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         Obx(
-          () => Get.put(EventController()).eventList.isEmpty
+          () => _eventController.eventList
+                  .where((element) => element.status == "upcoming")
+                  .isEmpty
               ? Card(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   elevation: 0,
@@ -744,19 +803,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   // max 3 item
-                  itemCount: Get.put(EventController())
-                              .eventList
+                  itemCount: _eventController.eventList
                               .where((element) => element.status == "upcoming")
                               .length >
                           3
                       ? 3
-                      : Get.put(EventController())
-                          .eventList
+                      : _eventController.eventList
                           .where((element) => element.status == "upcoming")
                           .length,
                   itemBuilder: (context, index) {
-                    var event = Get.put(EventController())
-                        .eventList
+                    var event = _eventController.eventList
                         .where((element) => element.status == "upcoming")
                         .elementAt(index);
                     return Card(
@@ -866,19 +922,75 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     );
-                  }),
+                  },
+                ),
         )
       ],
     );
   }
 
-  Widget _buildLatestNews() {
-    List<String> newsImages = [
-      "assets/images/17.jpg",
-      "assets/images/17-1.jpg",
-      "assets/images/pmb.jpg",
-    ];
+  Widget _buildNetworkImage(String imageUrl, {double? width, double? height}) {
+    // Handle empty or null URLs
+    if (imageUrl.isEmpty) {
+      return Container(
+        width: width,
+        height: height,
+        color: Utils.kPrimaryColor.withValues(alpha: 0.1),
+        child: const Icon(
+          Icons.announcement_outlined,
+          color: Utils.kPrimaryColor,
+          size: 32,
+        ),
+      );
+    }
 
+    // For web, use CORS proxy to avoid CORS issues
+    String finalImageUrl = imageUrl;
+    if (kIsWeb) {
+      // Use a CORS proxy service for web
+      finalImageUrl =
+          'https://api.allorigins.win/raw?url=${Uri.encodeComponent(imageUrl)}';
+    }
+
+    return Image.network(
+      finalImageUrl,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          width: width,
+          height: height,
+          color: Colors.grey[200],
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              strokeWidth: 2,
+              color: Utils.kPrimaryColor,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: width,
+          height: height,
+          color: Utils.kPrimaryColor.withValues(alpha: 0.1),
+          child: const Icon(
+            Icons.announcement_outlined,
+            color: Utils.kPrimaryColor,
+            size: 32,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLatestNews() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -894,42 +1006,100 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 14,
           ),
           descriptionTextAlign: TextAlign.center,
-          child: const CustomTitleHeaderHome(
-            title: "Latest News",
-            trailing: Text(
-              "Lihat Semua",
-              style: TextStyle(
-                color: Utils.kPrimaryColor,
+          child: CustomTitleHeaderHome(
+            title: "Pengumuman",
+            trailing: InkWell(
+              onTap: () {
+                Get.to(() => const AnnouncementListView());
+              },
+              child: const Text(
+                "Lihat Semua",
+                style: TextStyle(
+                  color: Utils.kPrimaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
         ),
-        CarouselSlider(
-          options: CarouselOptions(
-            height: 300,
-            autoPlay: true,
-            enlargeCenterPage: true,
-            enlargeStrategy: CenterPageEnlargeStrategy.height,
-          ),
-          items: newsImages.map((i) {
-            return Builder(
-              builder: (BuildContext context) {
-                return Container(
-                  width: Get.width,
-                  clipBehavior: Clip.antiAlias,
-                  margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                  decoration: BoxDecoration(
-                    color: Colors.green[100],
-                    borderRadius: BorderRadius.circular(10.0),
+        Obx(
+          () => _announcementController.announcementList.isEmpty
+              ? const Center(child: Text("Tidak ada berita"))
+              : CarouselSlider(
+                  options: CarouselOptions(
+                    height: 300,
+                    autoPlay: true,
+                    enlargeCenterPage: true,
+                    enlargeStrategy: CenterPageEnlargeStrategy.height,
                   ),
-                  child: Image.asset(
-                    i,
-                    fit: BoxFit.fill,
-                  ),
-                );
-              },
-            );
-          }).toList(),
+                  items: _announcementController.announcementList.map((i) {
+                    return Builder(
+                      builder: (BuildContext context) {
+                        return GestureDetector(
+                          onTap: () {
+                            Get.to(
+                                () => AnnouncementDetailView(announcement: i));
+                          },
+                          child: Container(
+                            width: Get.width,
+                            padding: const EdgeInsets.all(12),
+                            clipBehavior: Clip.antiAlias,
+                            margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                            decoration: BoxDecoration(
+                              color:
+                                  Utils.kPrimaryColor.withValues(alpha: 0.15),
+                              border: const Border(),
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10.0),
+                                    child: _buildNetworkImage(
+                                      i!.imageUrl ?? "",
+                                      width: Get.width,
+                                      height: double.infinity,
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        i.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "${i.content.split(" ").take(6).join(" ")}...",
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }).toList(),
+                ),
         ),
       ],
     );

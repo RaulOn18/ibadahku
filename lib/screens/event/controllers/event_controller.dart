@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ibadahku/models/my_event_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,7 +37,7 @@ class EventController extends GetxController {
   Future<void> fetchEventForCurrentUser() async {
     try {
       final params = {
-        "p_user_id": currentUser!.id.toString(),
+        "p_user_id": currentUser?.id.toString() ?? "",
         if (selectedCategory.value.isNotEmpty)
           "p_status_filter": selectedCategory.value,
       };
@@ -53,15 +52,13 @@ class EventController extends GetxController {
           .toList();
     } catch (e, stackTrace) {
       log("Error fetching events: $e\n$stackTrace");
-      ScaffoldMessenger.of(Get.context!)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text("Failed to fetch events: ${e.toString()}"),
-            behavior: SnackBarBehavior.floating,
-            showCloseIcon: true,
-          ),
-        );
+      // Get.snackbar(
+      //   'Error',
+      //   'Failed to fetch events: ${e.toString()}',
+      //   snackPosition: SnackPosition.BOTTOM,
+      //   backgroundColor: Colors.red,
+      //   colorText: Colors.white,
+      // );
     } finally {
       isFetchingEvent.value = false;
     }
@@ -83,15 +80,13 @@ class EventController extends GetxController {
           .toList();
     } catch (e, stackTrace) {
       log("Error fetching active events: $e\n$stackTrace");
-      ScaffoldMessenger.of(Get.context!)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text("Failed to fetch active events: ${e.toString()}"),
-            behavior: SnackBarBehavior.floating,
-            showCloseIcon: true,
-          ),
-        );
+      // Get.snackbar(
+      //   'Error',
+      //   'Failed to fetch active events: ${e.toString()}',
+      //   snackPosition: SnackPosition.BOTTOM,
+      //   backgroundColor: Colors.red,
+      //   colorText: Colors.white,
+      // );
     }
   }
 
