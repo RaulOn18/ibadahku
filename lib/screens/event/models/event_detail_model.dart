@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 enum EventStatus {
   upcoming,
   active,
@@ -130,5 +132,95 @@ class EventDetailModel {
       'created_by_user_id': createdByUserId,
       'is_attended': isAttended, // Tambahkan properti baru
     };
+  }
+
+  Map<String, String> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description ?? '',
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime.toIso8601String(),
+      'location': location,
+      'location_name': locationName,
+      'type': type.toString(),
+      'type_name': typeName,
+      'status': status.toShortString(),
+      'for_all_batches': forAllBatches.toString(),
+      'attended_count': attendedCount.toString(),
+      'eligible_count': eligibleCount.toString(),
+      'qr_value': qrValue,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String() ?? "",
+      'created_by_user_id': createdByUserId,
+      'is_attended': isAttended.toString(),
+    };
+  }
+
+  // FUNGSI PEMBANTU UNTUK MENGURAI DATE/TIME DENGAN AMAN
+  static DateTime? _safeParseDateTime(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return null;
+    }
+    try {
+      return DateTime.parse(dateString);
+    } catch (e) {
+      // Anda bisa menambahkan logging di sini jika perlu
+      log('Error parsing date: $dateString - $e');
+      return null;
+    }
+  }
+
+// PERBAIKAN PADA FACTORY CONSTRUCTOR ANDA
+  factory EventDetailModel.fromMapToEventDetail(Map<String, String?> map) {
+    // Gunakan fungsi pembantu untuk mengurai startTime, endTime, dan createdAt.
+    // Karena properti tersebut wajib (non-nullable) di EventDetailModel,
+    // Anda harus memutuskan nilai default apa yang akan digunakan jika parse gagal,
+    // atau jika Anda yakin data tidak akan pernah null/kosong.
+
+    // OPSI 1: Jika properti waktu HARUS ada, gunakan null-check atau nilai default yang aman
+    // Saya berasumsi 'start_time', 'end_time', dan 'created_at' **wajib** ada.
+
+    final String startTimeStr = map['start_time'] ?? '';
+    final String endTimeStr = map['end_time'] ?? '';
+    final String createdAtStr = map['created_at'] ?? '';
+
+    // Mengurai waktu yang wajib (non-nullable)
+    final DateTime startTime =
+        EventDetailModel._safeParseDateTime(startTimeStr) ??
+            DateTime(1970); // Default yang aman jika gagal
+    final DateTime endTime =
+        EventDetailModel._safeParseDateTime(endTimeStr) ?? DateTime(1970);
+    final DateTime createdAt =
+        EventDetailModel._safeParseDateTime(createdAtStr) ?? DateTime(1970);
+
+    return EventDetailModel(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      description: map['description'] ?? '',
+
+      // Perubahan di sini:
+      startTime: startTime,
+      endTime: endTime,
+
+      location: map['location'] ?? '',
+      locationName: map['location_name'] ?? '',
+      type: int.parse(map['type'] ?? '0'),
+      typeName: map['type_name'] ?? '',
+      status: EventStatusExtension.fromString(map['status'] ?? 'upcoming'),
+      forAllBatches: map['for_all_batches'] == 'true',
+      attendedCount: int.parse(map['attended_count'] ?? '0'),
+      eligibleCount: int.parse(map['eligible_count'] ?? '0'),
+      qrValue: map['qr_value'] ?? '',
+
+      // Perubahan di sini:
+      createdAt: createdAt,
+
+      // Perubahan di sini untuk 'updatedAt' yang nullable:
+      updatedAt: EventDetailModel._safeParseDateTime(map['updated_at']),
+
+      createdByUserId: map['created_by_user_id'] ?? '',
+      isAttended: map['is_attended'] == 'true',
+    );
   }
 }

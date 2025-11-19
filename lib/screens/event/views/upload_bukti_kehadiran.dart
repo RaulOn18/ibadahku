@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart'; // Untuk GetX
 import 'package:ibadahku/utils/utils.dart';
 import 'package:intl/intl.dart'; // Untuk format tanggal dan waktu
@@ -42,14 +45,38 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
   void initState() {
     super.initState();
     // Mendapatkan argumen dari GetX
-    event = Get.arguments as EventDetailModel;
+    log('params ${Get.parameters}');
+    event = EventDetailModel.fromMapToEventDetail(Get.parameters);
     userId = Supabase.instance.client.auth.currentUser!.id;
     eventAttendanceId = null; // Set default null, bisa diubah jika diperlukan
   }
 
+  // Helper method untuk membuat File object yang compatible dengan web
+  File _createFileFromXFile(XFile xFile) {
+    if (kIsWeb) {
+      // Untuk web, buat File object dengan path yang valid
+      return File(xFile.path);
+    } else {
+      // Untuk mobile, gunakan path biasa
+      return File(xFile.path);
+    }
+  }
+
   Future<void> _pickPhoto() async {
     try {
-      // Tampilkan dialog untuk memilih sumber foto
+      // Di web, camera tidak tersedia, langsung ke gallery
+      if (kIsWeb) {
+        final XFile? pickedFile =
+            await ImagePicker().pickImage(source: ImageSource.gallery);
+        if (pickedFile != null) {
+          setState(() {
+            _photoFile = _createFileFromXFile(pickedFile);
+          });
+        }
+        return;
+      }
+
+      // Untuk mobile, tampilkan dialog untuk memilih sumber foto
       final choice = await showDialog<String>(
         context: context,
         builder: (BuildContext context) {
@@ -81,17 +108,46 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
       final XFile? pickedFile = await ImagePicker().pickImage(source: source);
       if (pickedFile != null) {
         setState(() {
-          _photoFile = File(pickedFile.path);
+          _photoFile = _createFileFromXFile(pickedFile);
         });
       }
     } catch (e) {
       _showSnackBar('Gagal memilih foto: $e', isError: true);
+      log('Pick photo error: $e');
     }
   }
 
   Future<void> _pickResume() async {
     try {
-      // Tampilkan dialog untuk memilih sumber file
+      // Di web, langsung ke file picker
+      if (kIsWeb) {
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: [
+            'pdf',
+            'doc',
+            'docx',
+            'txt',
+            'jpg',
+            'jpeg',
+            'png',
+            'webp'
+          ],
+        );
+
+        if (result != null && result.files.single.bytes != null) {
+          // Untuk web, buat File dari nama file
+          final fileName = result.files.single.name;
+          // Buat temporary file path untuk web
+          final tempPath = 'web_upload_$fileName';
+          setState(() {
+            _resumeFile = File(tempPath);
+          });
+        }
+        return;
+      }
+
+      // Untuk mobile, tampilkan dialog untuk memilih sumber file
       final choice = await showDialog<String>(
         context: context,
         builder: (BuildContext context) {
@@ -127,7 +183,7 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
             await ImagePicker().pickImage(source: ImageSource.camera);
         if (pickedFile != null) {
           setState(() {
-            _resumeFile = File(pickedFile.path);
+            _resumeFile = _createFileFromXFile(pickedFile);
           });
         }
       } else if (choice == 'gallery') {
@@ -135,7 +191,7 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
             await ImagePicker().pickImage(source: ImageSource.gallery);
         if (pickedFile != null) {
           setState(() {
-            _resumeFile = File(pickedFile.path);
+            _resumeFile = _createFileFromXFile(pickedFile);
           });
         }
       } else if (choice == 'file') {
@@ -152,34 +208,85 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
       }
     } catch (e) {
       _showSnackBar('Gagal memilih file: $e', isError: true);
+      log('Pick resume error: $e');
     }
   }
 
   Future<String?> _uploadFile(File file, String bucketName, String path) async {
     try {
+      // Validasi tipe file berdasarkan ekstensi
+      String fileExtension = file.path.split('.').last.toLowerCase();
+      List<String> allowedExtensions = [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp', // Tambahkan webp untuk support web
+        'pdf',
+        'doc',
+        'docx',
+        'txt'
+      ];
+      if (!allowedExtensions.contains(fileExtension)) {
+        _showSnackBar(
+            'Tipe file tidak didukung. Hanya file gambar dan dokumen yang diizinkan.',
+            isError: true);
+        return null;
+      }
+
       // Pastikan nama file unik untuk menghindari konflik
       final String fileName =
           '${DateTime.now().millisecondsSinceEpoch}-${file.path.split('/').last}';
       final String fullPath = '$path/$fileName';
-      await supabase.storage.from(bucketName).upload(
-            fullPath,
-            file,
-            fileOptions: const FileOptions(
-                upsert: false), // Jangan overwrite jika sudah ada
-          );
+
+      // Handle upload berbeda untuk web dan mobile
+      if (kIsWeb) {
+        // Untuk web, baca file sebagai bytes
+        final bytes = await file.readAsBytes();
+
+        // Validasi ukuran file (maksimal 10MB)
+        if (bytes.length > 10 * 1024 * 1024) {
+          _showSnackBar('File terlalu besar. Maksimal ukuran file adalah 10MB.',
+              isError: true);
+          return null;
+        }
+
+        await supabase.storage.from(bucketName).uploadBinary(
+              fullPath,
+              bytes,
+              fileOptions: const FileOptions(upsert: false),
+            );
+      } else {
+        // Untuk mobile, validasi ukuran file
+        int fileSize = file.lengthSync();
+        int maxSize = 10 * 1024 * 1024; // 10MB dalam bytes
+        if (fileSize > maxSize) {
+          _showSnackBar('File terlalu besar. Maksimal ukuran file adalah 10MB.',
+              isError: true);
+          return null;
+        }
+
+        await supabase.storage.from(bucketName).upload(
+              fullPath,
+              file,
+              fileOptions: const FileOptions(upsert: false),
+            );
+      }
+
       return supabase.storage
           .from(bucketName)
           .getPublicUrl(fullPath); // Dapatkan URL publik
+    } on StorageException catch (e) {
+      // Tangani error khusus dari Supabase Storage
+      _showSnackBar('Gagal mengunggah file ke $bucketName: ${e.message}',
+          isError: true);
+      log('UPLOAD FILE - StorageException: ${e.message}');
+      log('UPLOAD FILE - StorageException status: ${e.statusCode}');
+      return null;
     } catch (e) {
-      // Periksa apakah error karena file sudah ada (jika upsert false)
-      if (e is StorageException && e.message.contains('Duplicate')) {
-        _showSnackBar('File sudah ada di penyimpanan.', isError: true);
-        // Mungkin ingin ambil URL yang sudah ada, atau minta pengguna ganti nama
-        // Untuk contoh ini, kita anggap itu error yang perlu ditangani.
-      } else {
-        _showSnackBar('Gagal mengunggah file ke $bucketName: $e',
-            isError: true);
-      }
+      // Penanganan error umum
+      _showSnackBar('UPLOAD FILE - Gagal mengunggah file ke $bucketName: $e',
+          isError: true);
+      log('Upload error: $e');
       return null;
     }
   }
@@ -203,7 +310,8 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
       photoUrl = await _uploadFile(_photoFile!, 'event-attachments',
           'photos'); // Ganti 'event-attachments' dengan nama bucket Storage kamu
       if (photoUrl == null) {
-        throw Exception('Gagal mengunggah foto.');
+        // throw Exception('Gagal upload foto.');
+        log("Gagal upload foto.");
       }
 
       // Unggah resume jika ada file yang dipilih
@@ -219,7 +327,7 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
         'event_id': event.id,
         'user_id': userId,
         'attended_at': DateTime.now().toIso8601String(), // Waktu kehadiran
-        'photo_attachment_url': photoUrl,
+        'photo_attachment_url': photoUrl ?? "",
         'resume_attachment_url': resumeUrl,
         // created_at akan default now() di database (jika insert)
         // updated_at akan diisi jika ini update
@@ -269,9 +377,9 @@ class _UploadBuktiKehadiranState extends State<UploadBuktiKehadiran> {
       canPop: !_isLoading, // Mencegah pop saat isLoading
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Unggah Bukti Kehadiran',
-            style: TextStyle(color: Colors.white),
+          title: Text(
+            'Unggah Bukti Kehadiran ${event.name}',
+            style: const TextStyle(color: Colors.white),
           ),
           backgroundColor: Utils.kSecondaryColor,
           iconTheme: const IconThemeData(color: Colors.white),

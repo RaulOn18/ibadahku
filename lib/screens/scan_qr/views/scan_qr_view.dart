@@ -174,7 +174,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
             ),
           );
         Get.back();
-        Get.toNamed(Routes.uploadBuktiKehadiran, arguments: isValid);
+        Get.toNamed(Routes.uploadBuktiKehadiran, parameters: isValid.toMap());
         return;
       } else {
         ScaffoldMessenger.of(context)
